@@ -179,13 +179,13 @@ void Pro_Config_Comm_Encrypt_Key(const char *key) {
 }
 
 static unsigned short Pro_Calc_Length(unsigned short size, unsigned short encrypt_flag) {
-  unsigned short len;
+  unsigned short len = size + sizeof(ProHeader) + 4;
+
   if (encrypt_flag) {
-    len = size + sizeof(ProHeader) + 4 +  (16 - size % 16);
+    // encrypted data is 16bytes padded
+    len += (16 - size % 16);
   }
-  else {
-    len = size + sizeof(ProHeader) + 4;
-  }
+
   return len;
 }
 
