@@ -52,7 +52,7 @@ void Pro_Link_Recv_Hook(ProHeader *header)
 			if(cmd_session[header->session_id].usage_flag == 1)
 			{
 				Get_Memory_Lock();
-				p2header = (ProHeader*)cmd_session[header->session_id].mmu->pmem;
+                p2header = (ProHeader*)cmd_session[header->session_id].mmu->mem;
 				if(p2header->session_id == header->session_id &&
 						p2header->sequence_number == header->sequence_number)
 				{
@@ -99,12 +99,12 @@ void Pro_Link_Recv_Hook(ProHeader *header)
 			else if(ack_session[header->session_id - 1].session_status == ACK_SESSION_USING)
 			{
 				Get_Memory_Lock();
-				p2header = (ProHeader *)ack_session[header->session_id - 1].mmu->pmem;
+                p2header = (ProHeader *)ack_session[header->session_id - 1].mmu->mem;
 				if(p2header->sequence_number == header->sequence_number)
 				{
 					printf("%s:repeat ACK to remote,session id=%d,seq_num=%d\n",
 								__func__,header->session_id,header->sequence_number);
-					Send_Pro_Data(ack_session[header->session_id - 1].mmu->pmem);
+                    Send_Pro_Data(ack_session[header->session_id - 1].mmu->mem);
 					Free_Memory_Lock();
 				}
 				else
@@ -145,14 +145,14 @@ static void Send_Poll(void)
 					}
 					else
 					{
-						Send_Pro_Data(cmd_session[i].mmu->pmem);
+                        Send_Pro_Data(cmd_session[i].mmu->mem);
 						cmd_session[i].pre_timestamp = cur_timestamp;
 						cmd_session[i].sent_time ++;
 					}
 				}
 				else
 				{
-					Send_Pro_Data(cmd_session[i].mmu->pmem);
+                    Send_Pro_Data(cmd_session[i].mmu->mem);
 					cmd_session[i].pre_timestamp = cur_timestamp;
 				}
 				Free_Memory_Lock();
@@ -245,7 +245,7 @@ int Pro_Ack_Interface(ProAckParameter *parameter)
 			return -1;
 		}
 
-		ret = sdk_encrypt_interface(ack_session->mmu->pmem,parameter->buf,
+        ret = sdk_encrypt_interface(ack_session->mmu->mem, parameter->buf,
 					parameter->length,1,parameter->need_encrypt,
 					parameter->session_id,parameter->seq_num);
 		if(ret == 0)
@@ -255,7 +255,7 @@ int Pro_Ack_Interface(ProAckParameter *parameter)
 			return -1;
 		}
 
-		Send_Pro_Data(ack_session->mmu->pmem);
+        Send_Pro_Data(ack_session->mmu->mem);
 		Free_Memory_Lock();
 		ack_session->session_status = ACK_SESSION_USING;
 		return 0;
@@ -287,7 +287,7 @@ int Pro_Send_Interface(ProSendParameter *parameter)
 			printf("%s:%d:ERROR,there is not enough memory\n",__func__,__LINE__);
 			return -1;
 		}
-		ret = sdk_encrypt_interface(cmd_session->mmu->pmem,parameter->buf,parameter->length,
+        ret = sdk_encrypt_interface(cmd_session->mmu->mem, parameter->buf,parameter->length,
 				0,parameter->need_encrypt,cmd_session->session_id,global_seq_num);
 		if(ret == 0)
 		{
@@ -296,7 +296,7 @@ int Pro_Send_Interface(ProSendParameter *parameter)
 			Free_Memory_Lock();
 			return -1;
 		}
-		Send_Pro_Data(cmd_session->mmu->pmem);
+        Send_Pro_Data(cmd_session->mmu->mem);
 		global_seq_num ++;
 		Free_CMD_Session(cmd_session);
 		Free_Memory_Lock();
@@ -314,7 +314,7 @@ int Pro_Send_Interface(ProSendParameter *parameter)
 		{
 			global_seq_num ++;
 		}
-		ret = sdk_encrypt_interface(cmd_session->mmu->pmem,parameter->buf,parameter->length,
+        ret = sdk_encrypt_interface(cmd_session->mmu->mem,parameter->buf,parameter->length,
 				0,parameter->need_encrypt,cmd_session->session_id,global_seq_num);
 		if(ret == 0)
 		{
@@ -332,7 +332,7 @@ int Pro_Send_Interface(ProSendParameter *parameter)
 		cmd_session->sent_time = 1;
 		cmd_session->retry_send_time = 1;
 
-		Send_Pro_Data(cmd_session->mmu->pmem);
+        Send_Pro_Data(cmd_session->mmu->mem);
 		Free_Memory_Lock();
 		break;
 	case 2:
@@ -348,7 +348,7 @@ int Pro_Send_Interface(ProSendParameter *parameter)
 		{
 			global_seq_num ++;
 		}
-		ret = sdk_encrypt_interface(cmd_session->mmu->pmem,parameter->buf,parameter->length,
+        ret = sdk_encrypt_interface(cmd_session->mmu->mem,parameter->buf,parameter->length,
 				0,parameter->need_encrypt,cmd_session->session_id,global_seq_num);
 		if(ret == 0)
 		{
@@ -364,7 +364,7 @@ int Pro_Send_Interface(ProSendParameter *parameter)
 		cmd_session->pre_timestamp = Get_TimeStamp();
 		cmd_session->sent_time = 1;
 		cmd_session->retry_send_time = parameter->retry_time;
-		Send_Pro_Data(cmd_session->mmu->pmem);
+        Send_Pro_Data(cmd_session->mmu->mem);
 		Free_Memory_Lock();
 		break;
 	}

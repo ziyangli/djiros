@@ -32,19 +32,19 @@ ACK_Session_Tab * Get_ACK_Session_Tab(void)
 void MMU_Setup(void)
 {
 	int i;
-	DJI_MMU_Tab[0].tab_index = 0;
-	DJI_MMU_Tab[0].usage_flag = 1;
-	DJI_MMU_Tab[0].pmem = Static_Memory;
-	DJI_MMU_Tab[0].mem_size = 0;
+    DJI_MMU_Tab[0].id = 0;
+    DJI_MMU_Tab[0].status = 1;
+    DJI_MMU_Tab[0].mem = Static_Memory;
+    DJI_MMU_Tab[0].len = 0;
 	for(i = 1 ; i < (MMU_TABLE_NUM - 1) ; i ++)
 	{
-		DJI_MMU_Tab[i].tab_index = i;
-		DJI_MMU_Tab[i].usage_flag = 0;
+        DJI_MMU_Tab[i].id = i;
+        DJI_MMU_Tab[i].status = 0;
 	}
-	DJI_MMU_Tab[MMU_TABLE_NUM - 1].tab_index = MMU_TABLE_NUM - 1;
-	DJI_MMU_Tab[MMU_TABLE_NUM - 1].usage_flag = 1;
-	DJI_MMU_Tab[MMU_TABLE_NUM - 1].pmem = Static_Memory + STATIC_MEMORY_SIZE;
-	DJI_MMU_Tab[MMU_TABLE_NUM - 1].mem_size = 0;
+    DJI_MMU_Tab[MMU_TABLE_NUM - 1].id = MMU_TABLE_NUM - 1;
+    DJI_MMU_Tab[MMU_TABLE_NUM - 1].status = 1;
+    DJI_MMU_Tab[MMU_TABLE_NUM - 1].mem = Static_Memory + STATIC_MEMORY_SIZE;
+    DJI_MMU_Tab[MMU_TABLE_NUM - 1].len = 0;
 }
 
 void Get_Memory_Lock(void)
@@ -63,11 +63,11 @@ void Free_Memory(MMU_Tab *mmu_tab)
 	{
 		return;
 	}
-	if(mmu_tab->tab_index == 0 || mmu_tab->tab_index == (MMU_TABLE_NUM - 1))
+    if(mmu_tab->id == 0 || mmu_tab->id == (MMU_TABLE_NUM - 1))
 	{
 		return;
 	}
-	mmu_tab->usage_flag = 0;
+    mmu_tab->status = 0;
 }
 
 void Display_Memory_Info(void)
@@ -84,9 +84,9 @@ void Display_Memory_Info(void)
 
 	for(i = 0 ; i < MMU_TABLE_NUM ; i ++)
 	{
-		if(DJI_MMU_Tab[i].usage_flag == 1)
+        if(DJI_MMU_Tab[i].status == 1)
 		{
-			mmu_tab_used_index[mmu_tab_used_num ++] = DJI_MMU_Tab[i].tab_index;
+            mmu_tab_used_index[mmu_tab_used_num ++] = DJI_MMU_Tab[i].id;
 		}
 	}
 
@@ -94,8 +94,8 @@ void Display_Memory_Info(void)
 	{
 		for(j = 0; j < (mmu_tab_used_num - i - 1) ; j ++)
 		{
-			if(DJI_MMU_Tab[mmu_tab_used_index[j]].pmem >
-				DJI_MMU_Tab[mmu_tab_used_index[j + 1]].pmem)
+            if(DJI_MMU_Tab[mmu_tab_used_index[j]].mem >
+                DJI_MMU_Tab[mmu_tab_used_index[j + 1]].mem)
 			{
 				temp8 = mmu_tab_used_index[j + 1];
 				mmu_tab_used_index[j + 1] = mmu_tab_used_index[j];
@@ -108,18 +108,18 @@ void Display_Memory_Info(void)
 
 	for(i = 0 ; i < mmu_tab_used_num - 1 ; i ++)
 	{
-		printf("<S=%08X L=%d I=%d,E=%08X>\n",(unsigned long)DJI_MMU_Tab[mmu_tab_used_index[i]].pmem,
-				DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size,
-				DJI_MMU_Tab[mmu_tab_used_index[i]].tab_index,
-				(unsigned long)(DJI_MMU_Tab[mmu_tab_used_index[i]].pmem +
-				DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size));
+        printf("<S=%08X L=%d I=%d,E=%08X>\n",(unsigned long)DJI_MMU_Tab[mmu_tab_used_index[i]].mem,
+                DJI_MMU_Tab[mmu_tab_used_index[i]].len,
+                DJI_MMU_Tab[mmu_tab_used_index[i]].id,
+                (unsigned long)(DJI_MMU_Tab[mmu_tab_used_index[i]].mem +
+                DJI_MMU_Tab[mmu_tab_used_index[i]].len));
 
-		if(DJI_MMU_Tab[mmu_tab_used_index[i + 1]].pmem > (DJI_MMU_Tab[mmu_tab_used_index[i]].pmem +
-				DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size))
+        if(DJI_MMU_Tab[mmu_tab_used_index[i + 1]].mem > (DJI_MMU_Tab[mmu_tab_used_index[i]].mem +
+                DJI_MMU_Tab[mmu_tab_used_index[i]].len))
 		{
-			temp32 = (unsigned int)(DJI_MMU_Tab[mmu_tab_used_index[i + 1]].pmem -
-					DJI_MMU_Tab[mmu_tab_used_index[i]].pmem) -
-					DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size;
+            temp32 = (unsigned int)(DJI_MMU_Tab[mmu_tab_used_index[i + 1]].mem -
+                    DJI_MMU_Tab[mmu_tab_used_index[i]].mem) -
+                    DJI_MMU_Tab[mmu_tab_used_index[i]].len;
 			printf("         --idle=%d--\n",temp32);
 		}
 		else
@@ -129,11 +129,11 @@ void Display_Memory_Info(void)
 
 	}
 
-    printf("<S=%08X L=%d I=%d E=%08X>\n",(unsigned long)DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].pmem,
-			DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].mem_size,
-			DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].tab_index,
-			(unsigned long)(DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].pmem +
-			DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].mem_size));
+    printf("<S=%08X L=%d I=%d E=%08X>\n",(unsigned long)DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].mem,
+            DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].len,
+            DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].id,
+            (unsigned long)(DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].mem +
+            DJI_MMU_Tab[mmu_tab_used_index[mmu_tab_used_num - 1]].len));
 #endif
 }
 
@@ -158,10 +158,10 @@ MMU_Tab * Request_Memory(unsigned short size)
 
 	for(i = 0 ; i < MMU_TABLE_NUM ; i ++)
 	{
-		if(DJI_MMU_Tab[i].usage_flag == 1)
+        if(DJI_MMU_Tab[i].status == 1)
 		{
-			mem_used += DJI_MMU_Tab[i].mem_size;
-			mmu_tab_used_index[mmu_tab_used_num ++] = DJI_MMU_Tab[i].tab_index;
+            mem_used += DJI_MMU_Tab[i].len;
+            mmu_tab_used_index[mmu_tab_used_num ++] = DJI_MMU_Tab[i].id;
 		}
 	}
 
@@ -172,9 +172,9 @@ MMU_Tab * Request_Memory(unsigned short size)
 
 	if(mem_used == 0)
 	{
-		DJI_MMU_Tab[1].pmem = DJI_MMU_Tab[0].pmem;
-		DJI_MMU_Tab[1].mem_size = size;
-		DJI_MMU_Tab[1].usage_flag = 1;
+        DJI_MMU_Tab[1].mem = DJI_MMU_Tab[0].mem;
+        DJI_MMU_Tab[1].len = size;
+        DJI_MMU_Tab[1].status = 1;
 		return &DJI_MMU_Tab[1];
 	}
 
@@ -182,8 +182,8 @@ MMU_Tab * Request_Memory(unsigned short size)
 	{
 		for(j = 0; j < (mmu_tab_used_num - i - 1) ; j ++)
 		{
-			if(DJI_MMU_Tab[mmu_tab_used_index[j]].pmem >
-				DJI_MMU_Tab[mmu_tab_used_index[j + 1]].pmem)
+            if(DJI_MMU_Tab[mmu_tab_used_index[j]].mem >
+                DJI_MMU_Tab[mmu_tab_used_index[j + 1]].mem)
 			{
 				mmu_tab_used_index[j + 1] ^= mmu_tab_used_index[j];
 				mmu_tab_used_index[j] ^= mmu_tab_used_index[j + 1];
@@ -194,19 +194,19 @@ MMU_Tab * Request_Memory(unsigned short size)
 
 	for(i = 0 ; i < (mmu_tab_used_num - 1) ; i ++)
 	{
-		temp32 = (unsigned int)(DJI_MMU_Tab[mmu_tab_used_index[i + 1]].pmem -
-				 DJI_MMU_Tab[mmu_tab_used_index[i]].pmem);
+        temp32 = (unsigned int)(DJI_MMU_Tab[mmu_tab_used_index[i + 1]].mem -
+                 DJI_MMU_Tab[mmu_tab_used_index[i]].mem);
 
-		if((temp32 - DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size) >= size)
+        if((temp32 - DJI_MMU_Tab[mmu_tab_used_index[i]].len) >= size)
 		{
-			if(temp_area[1] > (temp32 - DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size))
+            if(temp_area[1] > (temp32 - DJI_MMU_Tab[mmu_tab_used_index[i]].len))
 			{
-				temp_area[0] = DJI_MMU_Tab[mmu_tab_used_index[i]].tab_index;
-				temp_area[1] = temp32 - DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size;
+                temp_area[0] = DJI_MMU_Tab[mmu_tab_used_index[i]].id;
+                temp_area[1] = temp32 - DJI_MMU_Tab[mmu_tab_used_index[i]].len;
 			}
 		}
 
-		record_temp32 += temp32 - DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size;
+        record_temp32 += temp32 - DJI_MMU_Tab[mmu_tab_used_index[i]].len;
 		if(record_temp32 >= size && magic_flag == 0)
 		{
 			j = i;
@@ -218,32 +218,32 @@ MMU_Tab * Request_Memory(unsigned short size)
 	{
 		for(i = 0; i < j; i ++)
 		{
-			 if(DJI_MMU_Tab[mmu_tab_used_index[i + 1]].pmem
-					 >  (DJI_MMU_Tab[mmu_tab_used_index[i]].pmem +
-					 DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size))
+             if(DJI_MMU_Tab[mmu_tab_used_index[i + 1]].mem
+                     >  (DJI_MMU_Tab[mmu_tab_used_index[i]].mem +
+                     DJI_MMU_Tab[mmu_tab_used_index[i]].len))
 			 {
-				 memmove(DJI_MMU_Tab[mmu_tab_used_index[i]].pmem +
-						 DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size,
-						 DJI_MMU_Tab[mmu_tab_used_index[i + 1]].pmem,
-						 DJI_MMU_Tab[mmu_tab_used_index[i + 1]].mem_size);
-				 DJI_MMU_Tab[mmu_tab_used_index[i + 1]].pmem = DJI_MMU_Tab[mmu_tab_used_index[i]].pmem +
-						 DJI_MMU_Tab[mmu_tab_used_index[i]].mem_size;
+                 memmove(DJI_MMU_Tab[mmu_tab_used_index[i]].mem +
+                         DJI_MMU_Tab[mmu_tab_used_index[i]].len,
+                         DJI_MMU_Tab[mmu_tab_used_index[i + 1]].mem,
+                         DJI_MMU_Tab[mmu_tab_used_index[i + 1]].len);
+                 DJI_MMU_Tab[mmu_tab_used_index[i + 1]].mem = DJI_MMU_Tab[mmu_tab_used_index[i]].mem +
+                         DJI_MMU_Tab[mmu_tab_used_index[i]].len;
 
-				//printf("move tab_index=%d\n",
-				//		 DJI_MMU_Tab[mmu_tab_used_index[i + 1]].tab_index);
+                //printf("move id=%d\n",
+                //		 DJI_MMU_Tab[mmu_tab_used_index[i + 1]].id);
 			 }
 		}
 
 		for(i = 1 ; i < (MMU_TABLE_NUM - 1) ; i ++)
 		{
-			if(DJI_MMU_Tab[i].usage_flag == 0)
+            if(DJI_MMU_Tab[i].status == 0)
 			{
-				DJI_MMU_Tab[i].pmem =
-						DJI_MMU_Tab[mmu_tab_used_index[j]].pmem +
-						DJI_MMU_Tab[mmu_tab_used_index[j]].mem_size;
+                DJI_MMU_Tab[i].mem =
+                        DJI_MMU_Tab[mmu_tab_used_index[j]].mem +
+                        DJI_MMU_Tab[mmu_tab_used_index[j]].len;
 
-				DJI_MMU_Tab[i].mem_size = size;
-				DJI_MMU_Tab[i].usage_flag = 1;
+                DJI_MMU_Tab[i].len = size;
+                DJI_MMU_Tab[i].status = 1;
 				return &DJI_MMU_Tab[i];
 			}
 		}
@@ -252,13 +252,13 @@ MMU_Tab * Request_Memory(unsigned short size)
 
 	for(i = 1 ; i < (MMU_TABLE_NUM - 1) ; i ++)
 	{
-		if(DJI_MMU_Tab[i].usage_flag == 0)
+        if(DJI_MMU_Tab[i].status == 0)
 		{
-			DJI_MMU_Tab[i].pmem = DJI_MMU_Tab[temp_area[0]].pmem +
-									DJI_MMU_Tab[temp_area[0]].mem_size;
+            DJI_MMU_Tab[i].mem = DJI_MMU_Tab[temp_area[0]].mem +
+                                    DJI_MMU_Tab[temp_area[0]].len;
 
-			DJI_MMU_Tab[i].mem_size = size;
-			DJI_MMU_Tab[i].usage_flag = 1;
+            DJI_MMU_Tab[i].len = size;
+            DJI_MMU_Tab[i].status = 1;
 			return &DJI_MMU_Tab[i];
 		}
 	}

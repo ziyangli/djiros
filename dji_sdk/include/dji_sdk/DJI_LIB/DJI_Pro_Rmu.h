@@ -8,6 +8,8 @@
 #ifndef DJI_PRO_RMU_H_
 #define DJI_PRO_RMU_H_
 
+#include <stdint.h>
+
 #include "DJI_Pro_Link.h"
 #include "DJI_Pro_Config.h"
 
@@ -17,12 +19,17 @@
 #define STATIC_MEMORY_SIZE				MEMORY_SIZE
 #define MMU_TABLE_NUM					32
 
-typedef struct MMU_Tab
-{
-	unsigned int tab_index : 8;
-	unsigned int usage_flag : 8;
-	unsigned int mem_size : 16;
-	unsigned char *pmem;
+/**
+ * @brief memory management unit table
+ *
+ * manually allocate memory for safety and
+ * efficiency in MCU usecase
+ */
+typedef struct MMU_Tab {
+  uint8_t  id;      /**< table index */
+  uint8_t  status;  /**< 1-> using, 0-> free */
+  uint16_t len;     /**< size of allocated memory */
+  uint8_t* mem;     /**< pointer to the memory */
 } MMU_Tab;
 
 /* session management unit */
