@@ -57,7 +57,7 @@ void Free_Memory_Lock(void)
 }
 
 void Free_Memory(MMU_Tab* mmu_tab) {
-  if (mmu_tab == (MMU_Tab*)0) {
+  if (mmu_tab == (MMU_Tab*)NULL) {
     return;
   }
 
@@ -135,8 +135,7 @@ void Display_Memory_Info(void)
 #endif
 }
 
-MMU_Tab * Request_Memory(unsigned short size)
-{
+MMU_Tab* Request_Memory(unsigned short size) {
   unsigned int mem_used = 0;
   unsigned char i;
   unsigned char j = 0;
@@ -144,18 +143,16 @@ MMU_Tab * Request_Memory(unsigned short size)
   unsigned char mmu_tab_used_index[MMU_TABLE_NUM];
 
   unsigned int temp32;
-  unsigned int temp_area[2] = {0xFFFFFFFF,0xFFFFFFFF};
+  unsigned int temp_area[2] = {0xFFFFFFFF, 0xFFFFFFFF};
 
   unsigned int record_temp32 = 0;
   unsigned char magic_flag = 0;
 
-  if(size > PRO_PURE_DATA_MAX_SIZE || size > STATIC_MEMORY_SIZE)
-  {
-    return (MMU_Tab *)0;
+  if (size > PRO_PURE_DATA_MAX_SIZE || size > STATIC_MEMORY_SIZE) {
+    return NULL;
   }
 
-  for(i = 0 ; i < MMU_TABLE_NUM ; i ++)
-  {
+  for (i = 0; i < MMU_TABLE_NUM; i++) {
     if(DJI_MMU_Tab[i].status == 1)
     {
       mem_used += DJI_MMU_Tab[i].len;
@@ -261,7 +258,7 @@ MMU_Tab * Request_Memory(unsigned short size)
     }
   }
 
-  return (MMU_Tab *)0;
+  return (MMU_Tab *)NULL;
 }
 
 void Session_Setup(void) {
@@ -335,21 +332,12 @@ void Free_CMD_Session(CMD_Session_Tab* session) {
   }
 }
 
-ACK_Session_Tab * Request_ACK_Session(unsigned short session_id,unsigned short size)
-{
-  MMU_Tab *mmu = NULL;
-  if(session_id > 0 && session_id < 32)
-  {
-    if(DJI_ACK_Session_Tab[session_id - 1].mmu)
-    {
-      Free_Memory(DJI_ACK_Session_Tab[session_id - 1].mmu);
-    }
-    mmu = Request_Memory(size);
-    if(mmu == NULL)
-    {
-    }
-    else
-    {
+ACK_Session_Tab* Request_ACK_Session(unsigned short session_id, unsigned short size) {
+  if (session_id > 0 && session_id < 32) {
+    // directly frees mmu!
+    Free_Memory(DJI_ACK_Session_Tab[session_id - 1].mmu);
+    MMU_Tab* mmu = Request_Memory(size);
+    if (mmu) {
       DJI_ACK_Session_Tab[session_id - 1].mmu = mmu;
       return &DJI_ACK_Session_Tab[session_id - 1];
     }

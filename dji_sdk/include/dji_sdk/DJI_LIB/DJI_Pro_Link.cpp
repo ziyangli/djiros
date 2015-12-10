@@ -194,20 +194,15 @@ int Pro_Ack_Interface(ProAckParameter* parameter) {
   ACK_Session_Tab* ack_session = (ACK_Session_Tab*)NULL;;
 
   if (parameter->length > PRO_PURE_DATA_MAX_SIZE) {
-    printf("%s: %d: ERROR, length = %d is oversize\n",
-           __func__, __LINE__, parameter->length);
+    printf("%s: %d: ERROR, length = %d is oversize\n", __func__, __LINE__, parameter->length);
     return -1;
   }
 
-  if (parameter->session_id == 0) {
-    ;
-  }
-  else if (parameter->session_id > 0 && parameter->session_id < 32) {
+  if (parameter->session_id > 0 && parameter->session_id < 32) {
     Get_Memory_Lock();
-    ack_session = Request_ACK_Session(parameter->session_id,
-                                      Pro_Calc_Length(parameter->length, parameter->need_encrypt));
+    ack_session = Request_ACK_Session(parameter->session_id, Pro_Calc_Length(parameter->length, parameter->need_encrypt));
     if (ack_session == (ACK_Session_Tab*)NULL) {
-      printf("%s:%d:ERROR,there is not enough memory\n",__func__,__LINE__);
+      printf("%s: %d: ERROR, there is not enough memory\n", __func__, __LINE__);
       Free_Memory_Lock();
       return -1;
     }
