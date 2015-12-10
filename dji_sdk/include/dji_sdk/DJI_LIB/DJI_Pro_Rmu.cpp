@@ -29,22 +29,24 @@ ACK_Session_Tab * Get_ACK_Session_Tab(void)
 	return DJI_ACK_Session_Tab;
 }
 
-void MMU_Setup(void)
-{
-	int i;
-    DJI_MMU_Tab[0].id = 0;
-    DJI_MMU_Tab[0].status = 1;
-    DJI_MMU_Tab[0].mem = Static_Memory;
-    DJI_MMU_Tab[0].len = 0;
-	for(i = 1 ; i < (MMU_TABLE_NUM - 1) ; i ++)
-	{
-        DJI_MMU_Tab[i].id = i;
-        DJI_MMU_Tab[i].status = 0;
-	}
-    DJI_MMU_Tab[MMU_TABLE_NUM - 1].id = MMU_TABLE_NUM - 1;
-    DJI_MMU_Tab[MMU_TABLE_NUM - 1].status = 1;
-    DJI_MMU_Tab[MMU_TABLE_NUM - 1].mem = Static_Memory + STATIC_MEMORY_SIZE;
-    DJI_MMU_Tab[MMU_TABLE_NUM - 1].len = 0;
+/**
+ * manaully allocate memory
+ */
+void MMU_Setup(void) {
+  DJI_MMU_Tab[0].id     = 0;
+  DJI_MMU_Tab[0].status = 1;
+  DJI_MMU_Tab[0].len    = 0;
+  DJI_MMU_Tab[0].mem    = Static_Memory;
+
+  for (int i = 1; i < (MMU_TABLE_NUM - 1); i++) {
+    DJI_MMU_Tab[i].id     = i;
+    DJI_MMU_Tab[i].status = 0;
+  }
+
+  DJI_MMU_Tab[MMU_TABLE_NUM - 1].id     = MMU_TABLE_NUM - 1;
+  DJI_MMU_Tab[MMU_TABLE_NUM - 1].status = 1;
+  DJI_MMU_Tab[MMU_TABLE_NUM - 1].len    = 0;
+  DJI_MMU_Tab[MMU_TABLE_NUM - 1].mem    = Static_Memory + STATIC_MEMORY_SIZE; // [TODO]: this point to an undefined location!!!
 }
 
 void Get_Memory_Lock(void)
@@ -370,8 +372,7 @@ void Free_ACK_Session(ACK_Session_Tab * session)
 	Free_Memory(session->mmu);
 }
 
-void DJI_Pro_Rmu_Setup(void)
-{
-	MMU_Setup();
-	Session_Setup();
+void DJI_Pro_Rmu_Setup(void) {
+  MMU_Setup();
+  Session_Setup();
 }
