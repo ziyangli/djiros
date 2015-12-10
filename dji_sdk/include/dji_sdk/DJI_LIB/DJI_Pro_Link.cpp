@@ -18,14 +18,13 @@
 static ACK_Callback_Func Call_APP_Func = 0;
 static Req_Callback_Func APP_Recv_Hook = 0;
 
-static void Send_Pro_Data(unsigned char *buf)
-{
-  ProHeader *pHeader = (ProHeader *)buf;
+static void Send_Pro_Data(unsigned char* buf) {
+  ProHeader* pHeader = (ProHeader*)buf;
 
 #ifdef PLATFORM_QT
   DJI_Pro_Hw::Pro_Hw_Get_Instance()->Pro_Hw_Send(buf,pHeader->length);
 #else
-  Pro_Hw_Send(buf,pHeader->length);
+  Pro_Hw_Send(buf, pHeader->length);
 #endif
 }
 
@@ -40,7 +39,7 @@ void Pro_Link_Recv_Hook(ProHeader *header) {
 
     if (id_to_check == 1) {
       // handle ack for session 1
-      if (cmd_session[1].usage_flag == 1 && cmd_session[1].ack_callback) {
+      if (cmd_session[1].status == 1 && cmd_session[1].ack_callback) {
         cmd_session[1].ack_callback(header);
         Get_Memory_Lock();
         Free_CMD_Session(&cmd_session[1]);
@@ -49,7 +48,7 @@ void Pro_Link_Recv_Hook(ProHeader *header) {
     }
     else if (id_to_check > 1 && id_to_check < 32) {
       // handle ack for sessions 2-31
-      if (cmd_session[id_to_check].usage_flag == 1) {
+      if (cmd_session[id_to_check].status == 1) {
         Get_Memory_Lock();
         p2header = (ProHeader*)cmd_session[id_to_check].mmu->mem;
         if (p2header->sequence_number == header->sequence_number) {
@@ -74,43 +73,31 @@ void Pro_Link_Recv_Hook(ProHeader *header) {
   else {
     // handle request
     switch (id_to_check) {
-      case 0:
+      case 0:  // leave session 0 to user handler
         Pro_Request_Interface(header);
         break;
-      case 1:
       default:
-        if(ack_session[id_to_check - 1].session_status == ACK_SESSION_PROCESS)
-        {
-          printf("%s,This session is waiting for App ack:"
-                 "session id=%d,seq_num=%d\n",__func__,
-                 id_to_check,header->sequence_number);
+        if (ack_session[id_to_check - 1].status == ACK_SESSION_PROCESS) {
+          printf("%s, This session is waiting for App ack: session id = %d, seq_num = %d\n", __func__, id_to_check, header->sequence_number);
         }
-        else if(ack_session[id_to_check - 1].session_status == ACK_SESSION_IDLE)
-        {
-          if(id_to_check > 1)
-          {
-            ack_session[id_to_check - 1].session_status = ACK_SESSION_PROCESS;
+        else if (ack_session[id_to_check - 1].status == ACK_SESSION_IDLE) {
+          if (id_to_check > 1) {
+            // only change for session 2-32???
+            ack_session[id_to_check - 1].status = ACK_SESSION_PROCESS;
           }
           Pro_Request_Interface(header);
         }
-        else if(ack_session[id_to_check - 1].session_status == ACK_SESSION_USING)
-        {
+        else if (ack_session[id_to_check - 1].status == ACK_SESSION_USING) {
           Get_Memory_Lock();
-          p2header = (ProHeader *)ack_session[id_to_check - 1].mmu->mem;
-          if(p2header->sequence_number == header->sequence_number)
-          {
-            printf("%s:repeat ACK to remote,session id=%d,seq_num=%d\n",
-                   __func__,id_to_check,header->sequence_number);
+          p2header = (ProHeader*)ack_session[id_to_check - 1].mmu->mem;
+          if (header->sequence_number == p2header->sequence_number) {
+            printf("%s: repeat ACK to remote, session id = %d, seq_num = %d\n", __func__, id_to_check, header->sequence_number);
             Send_Pro_Data(ack_session[id_to_check - 1].mmu->mem);
             Free_Memory_Lock();
           }
-          else
-          {
-            printf("%s:same session,but new seq_num pkg,session id=%d,"
-                   "pre seq_num=%d,""cur seq_num=%d\n",__func__,
-                   id_to_check,p2header->sequence_number,
-                   header->sequence_number);
-            ack_session[id_to_check - 1].session_status = ACK_SESSION_PROCESS;
+          else {
+            printf("%s: same session, but new seq_num pkg, session id = %d, pre seq_num = %d, cur seq_num=%d\n", __func__, id_to_check, p2header->sequence_number, header->sequence_number);
+            ack_session[id_to_check - 1].status = ACK_SESSION_PROCESS;
             Free_Memory_Lock();
             Pro_Request_Interface(header);
           }
@@ -127,24 +114,22 @@ static void Send_Poll(void)
   static CMD_Session_Tab * cmd_session = Get_CMD_Session_Tab();
   for(i = 1 ; i < SESSION_TABLE_NUM ; i ++)
   {
-    if(cmd_session[i].usage_flag == 1)
-    {
+    if (cmd_session[i].status == 1) {
       cur_timestamp = Get_TimeStamp();
       if((cur_timestamp - cmd_session[i].pre_timestamp)
          > cmd_session[i].ack_timeout)
       {
         Get_Memory_Lock();
-        if(cmd_session[i].retry_send_time > 0 )
+        if(cmd_session[i].max_retry > 0 )
         {
-          if(cmd_session[i].sent_time >= cmd_session[i].retry_send_time )
-          {
+          if (cmd_session[i].cnt_send >= cmd_session[i].max_retry) {
             Free_CMD_Session(&cmd_session[i]);
           }
           else
           {
             Send_Pro_Data(cmd_session[i].mmu->mem);
             cmd_session[i].pre_timestamp = cur_timestamp;
-            cmd_session[i].sent_time ++;
+            cmd_session[i].cnt_send++;
           }
         }
         else
@@ -215,28 +200,24 @@ static unsigned short Pro_Calc_Length(unsigned short size, unsigned short encryp
   return len;
 }
 
-int Pro_Ack_Interface(ProAckParameter *parameter)
-{
+int Pro_Ack_Interface(ProAckParameter* parameter) {
   unsigned short ret = 0;
-  ACK_Session_Tab * ack_session = (ACK_Session_Tab *)NULL;;
+  ACK_Session_Tab* ack_session = (ACK_Session_Tab*)NULL;;
 
-  if(parameter->length > PRO_PURE_DATA_MAX_SIZE)
-  {
-    printf("%s:%d:ERROR,length=%d is oversize\n",__func__,__LINE__,parameter->length);
+  if (parameter->length > PRO_PURE_DATA_MAX_SIZE) {
+    printf("%s: %d: ERROR, length = %d is oversize\n",
+           __func__, __LINE__, parameter->length);
     return -1;
   }
 
-  if(parameter->session_id == 0)
-  {
+  if (parameter->session_id == 0) {
     ;
   }
-  else if(parameter->session_id > 0 && parameter->session_id < 32)
-  {
+  else if (parameter->session_id > 0 && parameter->session_id < 32) {
     Get_Memory_Lock();
     ack_session = Request_ACK_Session(parameter->session_id,
-                                      Pro_Calc_Length(parameter->length,parameter->need_encrypt));
-    if(ack_session == (ACK_Session_Tab*)NULL)
-    {
+                                      Pro_Calc_Length(parameter->length, parameter->need_encrypt));
+    if (ack_session == (ACK_Session_Tab*)NULL) {
       printf("%s:%d:ERROR,there is not enough memory\n",__func__,__LINE__);
       Free_Memory_Lock();
       return -1;
@@ -254,7 +235,7 @@ int Pro_Ack_Interface(ProAckParameter *parameter)
 
     Send_Pro_Data(ack_session->mmu->mem);
     Free_Memory_Lock();
-    ack_session->session_status = ACK_SESSION_USING;
+    ack_session->status = ACK_SESSION_USING;
     return 0;
   }
 
@@ -284,8 +265,7 @@ int Pro_Send_Interface(ProSendParameter *parameter)
         printf("%s:%d:ERROR,there is not enough memory\n",__func__,__LINE__);
         return -1;
       }
-      ret = sdk_encrypt_interface(cmd_session->mmu->mem, parameter->buf,parameter->length,
-                                  0,parameter->need_encrypt,cmd_session->session_id,global_seq_num);
+      ret = sdk_encrypt_interface(cmd_session->mmu->mem, parameter->buf,parameter->length, 0, parameter->need_encrypt, cmd_session->id, global_seq_num);
       if(ret == 0)
       {
         printf("%s:%d:encrypt ERROR\n",__func__,__LINE__);
@@ -312,9 +292,8 @@ int Pro_Send_Interface(ProSendParameter *parameter)
         global_seq_num ++;
       }
       ret = sdk_encrypt_interface(cmd_session->mmu->mem,parameter->buf,parameter->length,
-                                  0,parameter->need_encrypt,cmd_session->session_id,global_seq_num);
-      if(ret == 0)
-      {
+                                  0,parameter->need_encrypt,cmd_session->id, global_seq_num);
+      if (ret == 0) {
         printf("%s:%d:encrypt ERROR\n",__func__,__LINE__);
         Free_CMD_Session(cmd_session);
         Free_Memory_Lock();
@@ -326,8 +305,8 @@ int Pro_Send_Interface(ProSendParameter *parameter)
                                  parameter->ack_timeout : POLL_TICK;
 
       cmd_session->pre_timestamp = Get_TimeStamp();
-      cmd_session->sent_time = 1;
-      cmd_session->retry_send_time = 1;
+      cmd_session->cnt_send  = 1;
+      cmd_session->max_retry = 1;
 
       Send_Pro_Data(cmd_session->mmu->mem);
       Free_Memory_Lock();
@@ -346,8 +325,8 @@ int Pro_Send_Interface(ProSendParameter *parameter)
         global_seq_num ++;
       }
       ret = sdk_encrypt_interface(cmd_session->mmu->mem,parameter->buf,parameter->length,
-                                  0,parameter->need_encrypt,cmd_session->session_id,global_seq_num);
-      if(ret == 0)
+                                  0,parameter->need_encrypt,cmd_session->id,global_seq_num);
+      if (ret == 0)
       {
         printf("%s:%d:encrypt ERROR\n",__func__,__LINE__);
         Free_CMD_Session(cmd_session);
@@ -359,8 +338,8 @@ int Pro_Send_Interface(ProSendParameter *parameter)
       cmd_session->ack_timeout = (parameter->ack_timeout > POLL_TICK) ?
                                  parameter->ack_timeout : POLL_TICK;
       cmd_session->pre_timestamp = Get_TimeStamp();
-      cmd_session->sent_time = 1;
-      cmd_session->retry_send_time = parameter->retry_time;
+      cmd_session->cnt_send = 1;
+      cmd_session->max_retry = parameter->retry_time;
       Send_Pro_Data(cmd_session->mmu->mem);
       Free_Memory_Lock();
       break;
@@ -368,38 +347,32 @@ int Pro_Send_Interface(ProSendParameter *parameter)
   return 0;
 }
 
-void Pro_App_Recv_Set_Hook(Req_Callback_Func p_hook)
-{
+void Pro_App_Recv_Set_Hook(Req_Callback_Func p_hook) {
   APP_Recv_Hook = p_hook;
 }
 
-void Pro_Request_Interface(ProHeader *header)
-{
-  //TODO call app data handler interface here
-  unsigned char buf[2] = {0,0};
-  if (APP_Recv_Hook)
-  {
+void Pro_Request_Interface(ProHeader* header) {
+  // TODO call app data handler interface here
+  if (APP_Recv_Hook) {
     APP_Recv_Hook(header);
   }
-  else
-  {
-    ProAckParameter param;
-    printf("%s:Recv request,session id=%d,seq_num=%d\n",
-           __func__,header->session_id,header->sequence_number);
-    if(header->session_id > 0)
-    {
-      param.session_id = header->session_id;
-      param.seq_num = header->sequence_number;
-      param.need_encrypt = header->enc_type;
-      param.buf = buf;
-      param.length = sizeof(buf);
+  else {
+    printf("%s: Recv request, session id = %d, seq_num = %d\n",
+           __func__, header->session_id, header->sequence_number);
+    if (header->session_id > 0) {
+      ProAckParameter param;
+      unsigned char buf[2] = {0, 0};
+      param.session_id     = header->session_id;
+      param.seq_num        = header->sequence_number;
+      param.need_encrypt   = header->enc_type;
+      param.buf            = buf;
+      param.length         = sizeof(buf);
       Pro_Ack_Interface(&param);
     }
   }
 }
 
-void Test_ACK_Callback(ProHeader *header)
-{
+void Test_ACK_Callback(ProHeader* header) {
   printf("%s:session id=%d,sq_num=%d\n",__func__,
          header->session_id,header->sequence_number);
 }

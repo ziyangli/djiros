@@ -48,14 +48,13 @@ typedef struct ProSendParameter {
   ACK_Callback_Func ack_callback;
 } ProSendParameter;
 
-typedef struct ProAckParameter
-{
-	unsigned short session_id : 8;
-	unsigned short need_encrypt : 8;
-	unsigned short seq_num;
-	unsigned int length;
-	unsigned char *buf;
-}ProAckParameter;
+typedef struct ProAckParameter {
+  uint16_t session_id   : 8;
+  uint16_t need_encrypt : 8;
+  uint16_t seq_num;
+  uint32_t length;
+  uint8_t* buf;
+} ProAckParameter;
 
 unsigned int Get_TimeStamp(void);
 void Pro_Link_Setup(void);

@@ -37,16 +37,17 @@ typedef struct MMU_Tab {
 #define ACK_SESSION_IDLE				0
 #define ACK_SESSION_PROCESS				1
 #define ACK_SESSION_USING				2
+
 #define SESSION_TABLE_NUM				32
 #define CMD_SESSION_0					0
 #define CMD_SESSION_1					1
 #define CMD_SESSION_AUTO				32
 
 typedef struct CMD_Session_Tab {
-  uint32_t session_id      : 5;
-  uint32_t usage_flag      : 1;
-  uint32_t sent_time       : 5;
-  uint32_t retry_send_time : 5;
+  uint32_t id              : 5;  /**< session id */
+  uint32_t status          : 1;  /**< 1->using; 0->free */
+  uint32_t cnt_send        : 5;  /**< sending time */
+  uint32_t max_retry       : 5;
   uint32_t ack_timeout     : 16;
   MMU_Tab  *mmu;
   ACK_Callback_Func ack_callback;
@@ -56,9 +57,9 @@ typedef struct CMD_Session_Tab {
 
 typedef struct ACK_Session_Tab {
   uint32_t session_id     : 5;
-  uint32_t session_status : 2;
+  uint32_t status         : 2;
   uint32_t res            : 25;
-  MMU_Tab *mmu;
+  MMU_Tab* mmu;
 } ACK_Session_Tab;
 
 extern CMD_Session_Tab * Get_CMD_Session_Tab(void);

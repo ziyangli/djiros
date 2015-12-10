@@ -283,8 +283,7 @@ int DJISDKNode::init_parameters(ros::NodeHandle& nh_private)
 }
 
 
-DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
-{
+DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private) {
 
     init_publishers(nh);
     init_services(nh);

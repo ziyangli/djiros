@@ -181,9 +181,8 @@ static int SerialStart(const char *dev_name,int baud_rate)
 	return -1;
 }
 
-static int SerialWrite(unsigned char *buf,int len)
-{
-	return write(serial_fd,buf,len);
+static int SerialWrite(unsigned char* buf, int len) {
+  return write(serial_fd, buf, len);
 }
 
 static int SerialRead(unsigned char *buf,int len)
@@ -255,9 +254,8 @@ int SerialStartThread(void)
 	return 0;
 }
 
-int Pro_Hw_Send(unsigned char *buf, int len)
-{
-	return SerialWrite(buf,len);
+int Pro_Hw_Send(unsigned char* buf, int len) {
+  return SerialWrite(buf, len);
 }
 
 int Pro_Hw_Recv(unsigned char *buf, int len)
