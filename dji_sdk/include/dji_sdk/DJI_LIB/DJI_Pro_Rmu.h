@@ -39,9 +39,9 @@ typedef struct MMU_Tab {
 #define ACK_SESSION_USING				2
 
 #define SESSION_TABLE_NUM				32
-#define CMD_SESSION_0					0
-#define CMD_SESSION_1					1
-#define CMD_SESSION_AUTO				32
+#define CMD_SESSION_0					0  // no ack
+#define CMD_SESSION_1					1  // ack maybe
+#define CMD_SESSION_AUTO				32 // ack complusory
 
 typedef struct CMD_Session_Tab {
   uint32_t id              : 5;  /**< session id */

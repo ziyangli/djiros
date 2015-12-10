@@ -189,30 +189,28 @@ static unsigned short Pro_Calc_Length(unsigned short size, unsigned short encryp
   return len;
 }
 
-int Pro_Ack_Interface(ProAckParameter* parameter) {
+int Pro_Ack_Interface(ProAckParameter* params) {
   unsigned short ret = 0;
   ACK_Session_Tab* ack_session = (ACK_Session_Tab*)NULL;;
 
-  if (parameter->length > PRO_PURE_DATA_MAX_SIZE) {
-    printf("%s: %d: ERROR, length = %d is oversize\n", __func__, __LINE__, parameter->length);
+  if (params->length > PRO_PURE_DATA_MAX_SIZE) {
+    printf("%s: %d: ERROR, length = %d is oversize\n", __func__, __LINE__, params->length);
     return -1;
   }
 
-  if (parameter->session_id > 0 && parameter->session_id < 32) {
+  if (params->session_id > 0 && params->session_id < 32) {
     Get_Memory_Lock();
-    ack_session = Request_ACK_Session(parameter->session_id, Pro_Calc_Length(parameter->length, parameter->need_encrypt));
+    ack_session = Request_ACK_Session(params->session_id, Pro_Calc_Length(params->length, params->need_encrypt));
     if (ack_session == (ACK_Session_Tab*)NULL) {
       printf("%s: %d: ERROR, there is not enough memory\n", __func__, __LINE__);
       Free_Memory_Lock();
       return -1;
     }
 
-    ret = sdk_encrypt_interface(ack_session->mmu->mem, parameter->buf,
-                                parameter->length,1,parameter->need_encrypt,
-                                parameter->session_id,parameter->seq_num);
-    if(ret == 0)
-    {
-      printf("%s:%d:encrypt ERROR\n",__func__,__LINE__);
+    ret = sdk_encrypt_interface(ack_session->mmu->mem, params->buf, params->length, 1, params->need_encrypt, params->session_id,params->seq_num);
+
+    if (ret == 0) {
+      printf("%s: %d: encrypt ERROR\n", __func__, __LINE__);
       Free_Memory_Lock();
       return -1;
     }
@@ -226,70 +224,62 @@ int Pro_Ack_Interface(ProAckParameter* parameter) {
   return -1;
 }
 
-int Pro_Send_Interface(ProSendParameter *parameter)
-{
+int Pro_Send_Interface(ProSendParameter *params) {
   unsigned short ret = 0;
-  CMD_Session_Tab * cmd_session = (CMD_Session_Tab *) NULL;
+  CMD_Session_Tab* cmd_session = NULL;
   static unsigned short global_seq_num = 0;
 
-  if(parameter->length > PRO_PURE_DATA_MAX_SIZE)
-  {
-    printf("%s:%d:ERROR,length=%d is oversize\n",__func__,__LINE__,parameter->length);
+  if (params->length > PRO_PURE_DATA_MAX_SIZE) {
+    printf("%s: %d: ERROR, length = %d is oversize\n", __func__, __LINE__, params->length);
     return -1;
   }
 
-  switch(parameter->session_mode)
-  {
+  switch (params->session_mode) {
     case 0:
       Get_Memory_Lock();
-      cmd_session = Request_CMD_Session(CMD_SESSION_0,Pro_Calc_Length(parameter->length,parameter->need_encrypt));
-      if(cmd_session == (CMD_Session_Tab *)NULL)
-      {
+      cmd_session = Request_CMD_Session(CMD_SESSION_0, Pro_Calc_Length(params->length, params->need_encrypt));
+      if (cmd_session == NULL) {
         Free_Memory_Lock();
-        printf("%s:%d:ERROR,there is not enough memory\n",__func__,__LINE__);
+        printf("%s: %d: ERROR, there is not enough memory\n", __func__, __LINE__);
         return -1;
       }
-      ret = sdk_encrypt_interface(cmd_session->mmu->mem, parameter->buf,parameter->length, 0, parameter->need_encrypt, cmd_session->id, global_seq_num);
-      if(ret == 0)
-      {
-        printf("%s:%d:encrypt ERROR\n",__func__,__LINE__);
+      ret = sdk_encrypt_interface(cmd_session->mmu->mem, params->buf, params->length, 0, params->need_encrypt, cmd_session->id, global_seq_num);
+      if (ret == 0) {
+        printf("%s: %d: encrypt ERROR\n", __func__, __LINE__);
         Free_CMD_Session(cmd_session);
         Free_Memory_Lock();
         return -1;
       }
       Send_Pro_Data(cmd_session->mmu->mem);
-      global_seq_num ++;
+      global_seq_num++;
       Free_CMD_Session(cmd_session);
       Free_Memory_Lock();
       break;
     case 1:
       Get_Memory_Lock();
-      cmd_session = Request_CMD_Session(CMD_SESSION_1,Pro_Calc_Length(parameter->length,parameter->need_encrypt));
-      if(cmd_session == (CMD_Session_Tab *)NULL)
-      {
+      cmd_session = Request_CMD_Session(CMD_SESSION_1, Pro_Calc_Length(params->length, params->need_encrypt));
+      if (cmd_session == NULL) {
         Free_Memory_Lock();
-        printf("%s:%d:ERROR,there is not enough memory\n",__func__,__LINE__);
+        printf("%s: %d: ERROR, there is not enough memory\n", __func__, __LINE__);
         return -1;
       }
-      if(global_seq_num == cmd_session->pre_seq_num)
-      {
-        global_seq_num ++;
+      if (global_seq_num == cmd_session->pre_seq_num) {
+        global_seq_num++;
       }
-      ret = sdk_encrypt_interface(cmd_session->mmu->mem,parameter->buf,parameter->length,
-                                  0,parameter->need_encrypt,cmd_session->id, global_seq_num);
+      ret = sdk_encrypt_interface(cmd_session->mmu->mem, params->buf, params->length, 0, params->need_encrypt, cmd_session->id, global_seq_num);
       if (ret == 0) {
         printf("%s:%d:encrypt ERROR\n",__func__,__LINE__);
         Free_CMD_Session(cmd_session);
         Free_Memory_Lock();
         return -1;
       }
-      cmd_session->pre_seq_num = global_seq_num ++;
-      cmd_session->ack_callback = parameter->ack_callback;
-      cmd_session->ack_timeout = (parameter->ack_timeout > POLL_TICK) ?
-                                 parameter->ack_timeout : POLL_TICK;
+      cmd_session->pre_seq_num = global_seq_num++;
+      cmd_session->ack_callback = params->ack_callback;
+      cmd_session->ack_timeout = (params->ack_timeout > POLL_TICK) ? params->ack_timeout : POLL_TICK;
 
       cmd_session->pre_timestamp = Get_TimeStamp();
       cmd_session->cnt_send  = 1;
+      // ack is not complusory for session 1
       cmd_session->max_retry = 1;
 
       Send_Pro_Data(cmd_session->mmu->mem);
@@ -297,33 +287,28 @@ int Pro_Send_Interface(ProSendParameter *parameter)
       break;
     case 2:
       Get_Memory_Lock();
-      cmd_session = Request_CMD_Session(CMD_SESSION_AUTO,Pro_Calc_Length(parameter->length,parameter->need_encrypt));
-      if(cmd_session == (CMD_Session_Tab *)NULL)
-      {
+      cmd_session = Request_CMD_Session(CMD_SESSION_AUTO, Pro_Calc_Length(params->length,params->need_encrypt));
+      if (cmd_session == NULL) {
         Free_Memory_Lock();
-        printf("%s:%d:ERROR,there is not enough memory\n",__func__,__LINE__);
+        printf("%s: %d: ERROR, there is not enough memory\n", __func__, __LINE__);
         return -1;
       }
-      if(global_seq_num == cmd_session->pre_seq_num)
-      {
-        global_seq_num ++;
+      if (global_seq_num == cmd_session->pre_seq_num) {
+        global_seq_num++;
       }
-      ret = sdk_encrypt_interface(cmd_session->mmu->mem,parameter->buf,parameter->length,
-                                  0,parameter->need_encrypt,cmd_session->id,global_seq_num);
-      if (ret == 0)
-      {
-        printf("%s:%d:encrypt ERROR\n",__func__,__LINE__);
+      ret = sdk_encrypt_interface(cmd_session->mmu->mem, params->buf, params->length, 0, params->need_encrypt, cmd_session->id, global_seq_num);
+      if (ret == 0) {
+        printf("%s: %d: encrypt ERROR\n", __func__, __LINE__);
         Free_CMD_Session(cmd_session);
         Free_Memory_Lock();
         return -1;
       }
-      cmd_session->pre_seq_num = global_seq_num ++;
-      cmd_session->ack_callback = parameter->ack_callback;
-      cmd_session->ack_timeout = (parameter->ack_timeout > POLL_TICK) ?
-                                 parameter->ack_timeout : POLL_TICK;
+      cmd_session->pre_seq_num = global_seq_num++;
+      cmd_session->ack_callback = params->ack_callback;
+      cmd_session->ack_timeout = (params->ack_timeout > POLL_TICK) ? params->ack_timeout : POLL_TICK;
       cmd_session->pre_timestamp = Get_TimeStamp();
       cmd_session->cnt_send = 1;
-      cmd_session->max_retry = parameter->retry_time;
+      cmd_session->max_retry = params->retry_time;
       Send_Pro_Data(cmd_session->mmu->mem);
       Free_Memory_Lock();
       break;
@@ -344,71 +329,14 @@ void Pro_Request_Interface(ProHeader* header) {
     printf("%s: Recv request, session id = %d, seq_num = %d\n",
            __func__, header->session_id, header->sequence_number);
     if (header->session_id > 0) {
-      ProAckParameter param;
+      ProAckParameter params;
       unsigned char buf[2] = {0, 0};
-      param.session_id     = header->session_id;
-      param.seq_num        = header->sequence_number;
-      param.need_encrypt   = header->enc_type;
-      param.buf            = buf;
-      param.length         = sizeof(buf);
-      Pro_Ack_Interface(&param);
+      params.session_id     = header->session_id;
+      params.seq_num        = header->sequence_number;
+      params.need_encrypt   = header->enc_type;
+      params.buf            = buf;
+      params.length         = sizeof(buf);
+      Pro_Ack_Interface(&params);
     }
   }
-}
-
-void Test_ACK_Callback(ProHeader* header) {
-  printf("%s:session id=%d,sq_num=%d\n",__func__,
-         header->session_id,header->sequence_number);
-}
-
-void Test_Pro_Link(void)
-{
-  unsigned char buf[16];
-  ProSendParameter param;
-  const char key[] = {"0000000000000000000000000000000000000000000000000000000000000000"};
-
-  Pro_Config_Comm_Encrypt_Key(key);
-#if 0
-  //session 0
-  buf[0] = 0x11;
-  buf[1] = 0x22;
-  param.pkg_type = 0;
-  param.length = 2;
-  param.buf = buf;
-  param.need_encrypt = 1;
-  Pro_Send_Interface(&param);
-
-  //session 1
-  buf[0] = 0x33;
-  buf[1] = 0x44;
-  param.pkg_type = 1;
-  param.length = 2;
-  param.ack_callback = Test_ACK_Callback;
-  param.buf = buf;
-  param.need_encrypt = 1;
-  Pro_Send_Interface(&param);
-#endif
-  //session 2~31
-  buf[0] = 0x55;
-  buf[1] = 0x66;
-  param.session_mode = 2;
-  param.length = 2;
-  param.ack_timeout = 1000;  //unit is ms
-  param.ack_callback = Test_ACK_Callback;
-  param.retry_time = 1;
-  param.buf = buf;
-  param.need_encrypt = 1;
-  Pro_Send_Interface(&param);
-
-  //session 2~31
-  buf[0] = 0x77;
-  buf[1] = 0x88;
-  param.session_mode = 2;
-  param.length = 2;
-  param.ack_timeout = 1000;  //unit is ms
-  param.ack_callback = Test_ACK_Callback;
-  param.retry_time = 5;
-  param.buf = buf;
-  param.need_encrypt = 1;
-  Pro_Send_Interface(&param);
 }

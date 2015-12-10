@@ -35,21 +35,21 @@ typedef struct ProHeader
 typedef void (*ACK_Callback_Func)(ProHeader *pHeader);
 
 typedef struct ProSendParameter {
-  uint16_t session_mode : 2;
-  uint16_t need_encrypt : 1;
-  uint16_t retry_time   : 13;
-  uint16_t ack_timeout;  //unit is ms
-  uint32_t length;
-  uint8_t* buf;
+  uint16_t       session_mode : 2; /**< 0: no ack; 1: ack maybe 2: must*/
+  uint16_t       need_encrypt : 1;
+  uint16_t       retry_time   : 13;
+  uint16_t       ack_timeout;  //unit is ms
+  uint32_t       length;
+  unsigned char* buf;
   ACK_Callback_Func ack_callback;
 } ProSendParameter;
 
 typedef struct ProAckParameter {
-  uint16_t session_id   : 8;
-  uint16_t need_encrypt : 8;
-  uint16_t seq_num;
-  uint32_t length;
-  uint8_t* buf;
+  uint16_t       session_id   : 8;
+  uint16_t       need_encrypt : 8;
+  uint16_t       seq_num;
+  uint32_t       length;
+  unsigned char* buf;
 } ProAckParameter;
 
 unsigned int Get_TimeStamp(void);
@@ -58,12 +58,9 @@ void Pro_Config_Comm_Encrypt_Key(const char *key);
 int Pro_Ack_Interface(ProAckParameter *parameter);
 int Pro_Send_Interface(ProSendParameter *parameter);
 void Pro_Request_Interface(ProHeader *header);
-void Test_Pro_Link(void);
 void Pro_Link_Recv_Hook(ProHeader *header);
 int  Pro_Send_Interface(ProSendParameter *parameter);
 typedef void (*Req_Callback_Func)(ProHeader *pHeader);
 void Pro_App_Recv_Set_Hook(Req_Callback_Func p_hook);
-
-void Test_Pro_Link(void);
 
 #endif /* DJI_PRO_LINK_H_ */

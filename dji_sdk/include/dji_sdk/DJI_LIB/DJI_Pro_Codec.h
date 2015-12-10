@@ -20,37 +20,33 @@
 #define _SDK_CALC_CRC_HEAD(_msg, _len)   sdk_stream_crc16_calc((const unsigned char*)(_msg), _len)
 #define _SDK_CALC_CRC_TAIL(_msg, _len)   sdk_stream_crc32_calc((const unsigned char*)(_msg), _len)
 
+typedef struct {
+    unsigned int sof             : 8; // 1byte
 
-typedef struct
-{
-	unsigned int sof : 8; // 1byte
+    unsigned int length          : 10;
+    unsigned int version         : 6; // 2byte
+    unsigned int session_id      : 5;
+    unsigned int is_ack          : 1;
+    unsigned int reversed0       : 2; // always 0
 
-	unsigned int length : 10;
-	unsigned int version : 6; // 2byte
-	unsigned int session_id : 5;
-	unsigned int is_ack : 1;
-	unsigned int reversed0 : 2; // always 0
-
-	unsigned int padding : 5;
-	unsigned int enc_type : 3;
-	unsigned int reversed1 : 24;
+    unsigned int padding         : 5;
+    unsigned int enc_type        : 3;
+    unsigned int reversed1       : 24;
 
 	unsigned int sequence_number : 16;
-	unsigned int head_crc : 16;
+    unsigned int head_crc        : 16;
 	unsigned int magic[0];
 } SDKHeader;
 
-typedef struct
-{
+typedef struct {
 	unsigned short reuse_index;
 	unsigned short reuse_count;
 	unsigned short recv_index;
-	unsigned char comm_recv_buf[_SDK_MAX_RECV_SIZE];
+    unsigned char  comm_recv_buf[_SDK_MAX_RECV_SIZE];
 	// for encrypt
-    unsigned char         comm_key[32];
-    unsigned char         enc_enabled;
+    unsigned char  comm_key[32];
+    unsigned char  enc_enabled;
 } SDKFilter;
-
 
 typedef void(*ptr_filter_hook)(SDKHeader* p_head);
 
@@ -58,8 +54,7 @@ void sdk_serial_byte_handle(unsigned char in_data);
 void sdk_serial_set_hook(ptr_filter_hook p_hook);
 
 void sdk_set_encrypt_key_interface(const char* sz_key);
-unsigned short sdk_encrypt_interface(unsigned char *pdest, const unsigned char *psrc,
-		unsigned short w_len,unsigned char is_ack,unsigned char is_enc,unsigned char session_id,unsigned short seq_num);
+unsigned short sdk_encrypt_interface(unsigned char *pdest, const unsigned char *psrc, unsigned short w_len,unsigned char is_ack,unsigned char is_enc,unsigned char session_id,unsigned short seq_num);
 
 /*
 * Internal functions

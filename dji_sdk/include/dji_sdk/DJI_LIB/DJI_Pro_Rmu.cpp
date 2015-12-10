@@ -153,15 +153,13 @@ MMU_Tab* Request_Memory(unsigned short size) {
   }
 
   for (i = 0; i < MMU_TABLE_NUM; i++) {
-    if(DJI_MMU_Tab[i].status == 1)
-    {
+    if (DJI_MMU_Tab[i].status == 1) {
       mem_used += DJI_MMU_Tab[i].len;
       mmu_tab_used_index[mmu_tab_used_num ++] = DJI_MMU_Tab[i].id;
     }
   }
 
-  if(STATIC_MEMORY_SIZE < (mem_used + size))
-  {
+  if (STATIC_MEMORY_SIZE < (mem_used + size)) {
     return (MMU_Tab *)0;
   }
 
@@ -277,51 +275,42 @@ void Session_Setup(void) {
 
 /* request a cmd session for sending cmd data
  * when arg session_id = 0/1, which means select session 0/1 to send cmd
- * otherwise set arg session_id = CMD_SESSION_AUTO (32), which means auto select a idle session id between 2~31.
+ * otherwise set arg session_id = CMD_SESSION_AUTO (32), which means auto select an idle session id between 2~31.
  */
-
-CMD_Session_Tab * Request_CMD_Session(unsigned short session_id,unsigned short size)
-{
+CMD_Session_Tab* Request_CMD_Session(unsigned short session_id, unsigned short size) {
   int i;
-  MMU_Tab *mmu = NULL;
+  MMU_Tab* mmu = NULL;
 
-  if(session_id == 0 || session_id == 1)
-  {
-    if (DJI_CMD_Session_Tab[session_id].status == 0)
-    {
+  if (session_id == 0 || session_id == 1) {
+    if (DJI_CMD_Session_Tab[session_id].status == 0) {
       i = session_id;
     }
-    else
-    {
+    else {
       /* session is busy */
-      printf("%s:%d:ERROR,session %d is busy\n",__func__,__LINE__,session_id);
+      printf("%s: %d: ERROR, session %d is busy\n", __func__, __LINE__, session_id);
       return NULL;
     }
   }
-  else
-  {
-    for(i = 2 ; i < SESSION_TABLE_NUM ; i ++)
-    {
-      if(DJI_CMD_Session_Tab[i].status == 0)
-      {
+  else {
+    for (i = 2; i < SESSION_TABLE_NUM; i++) {
+      if (DJI_CMD_Session_Tab[i].status == 0) {
+        DJI_CMD_Session_Tab[i].status = 1;
         break;
       }
     }
   }
-  if(i < 32 && DJI_CMD_Session_Tab[i].status == 0)
-  {
-    DJI_CMD_Session_Tab[i].status = 1;
+
+  if (i < SESSION_TABLE_NUM) {
     mmu = Request_Memory(size);
-    if(mmu == NULL)
-    {
+    if (mmu == NULL) {
       DJI_CMD_Session_Tab[i].status = 0;
     }
-    else
-    {
+    else {
       DJI_CMD_Session_Tab[i].mmu = mmu;
       return &DJI_CMD_Session_Tab[i];
     }
   }
+
   return NULL;
 }
 
