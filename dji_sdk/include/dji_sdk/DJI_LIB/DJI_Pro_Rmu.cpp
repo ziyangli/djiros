@@ -357,8 +357,7 @@ ACK_Session_Tab * Request_ACK_Session(unsigned short session_id,unsigned short s
   return NULL;
 }
 
-void Free_ACK_Session(ACK_Session_Tab * session)
-{
+void Free_ACK_Session(ACK_Session_Tab* session) {
   Free_Memory(session->mmu);
 }
 

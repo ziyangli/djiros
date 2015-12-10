@@ -47,7 +47,7 @@ typedef struct CMD_Session_Tab {
   uint32_t id              : 5;  /**< session id */
   uint32_t status          : 1;  /**< 1->using; 0->free */
   uint32_t cnt_send        : 5;  /**< sending time */
-  uint32_t max_retry       : 5;
+  uint32_t max_retry       : 5;  /**< max sending time, 0 means inf*/
   uint32_t ack_timeout     : 16;
   MMU_Tab  *mmu;
   ACK_Callback_Func ack_callback;

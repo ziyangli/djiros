@@ -107,94 +107,83 @@ void Pro_Link_Recv_Hook(ProHeader *header) {
   }
 }
 
-static void Send_Poll(void)
-{
-  unsigned char i;
-  unsigned int cur_timestamp;
-  static CMD_Session_Tab * cmd_session = Get_CMD_Session_Tab();
-  for(i = 1 ; i < SESSION_TABLE_NUM ; i ++)
-  {
+/**
+ * @brief polling function
+ *
+ * polls global cmd sessions table and send data if
+ * there is any,
+ * this implementation is buggy since it overwhelms
+ * the route when ack_timeout is not well defined.
+ */
+static void Send_Poll(void) {
+  static CMD_Session_Tab* cmd_session = Get_CMD_Session_Tab();
+  for (int i = 1 ; i < SESSION_TABLE_NUM ; i++) {
     if (cmd_session[i].status == 1) {
-      cur_timestamp = Get_TimeStamp();
-      if((cur_timestamp - cmd_session[i].pre_timestamp)
-         > cmd_session[i].ack_timeout)
-      {
+      // [TODO]: who frees session status?
+      unsigned int cur_timestamp = Get_TimeStamp();
+      if ((cur_timestamp - cmd_session[i].pre_timestamp)
+          > cmd_session[i].ack_timeout) {
+        // user's resposibility to asure ack_timeout is not too small
         Get_Memory_Lock();
-        if(cmd_session[i].max_retry > 0 )
-        {
+        if (cmd_session[i].max_retry > 0) {
           if (cmd_session[i].cnt_send >= cmd_session[i].max_retry) {
             Free_CMD_Session(&cmd_session[i]);
           }
-          else
-          {
+          else {
             Send_Pro_Data(cmd_session[i].mmu->mem);
             cmd_session[i].pre_timestamp = cur_timestamp;
             cmd_session[i].cnt_send++;
           }
         }
-        else
-        {
+        else {
           Send_Pro_Data(cmd_session[i].mmu->mem);
           cmd_session[i].pre_timestamp = cur_timestamp;
         }
         Free_Memory_Lock();
       }
-
     }
-
   }
 }
 
-static void * PollThread(void * arg)
-{
-  arg = arg;
-  while(1)
-  {
+static void* PollThread(void* arg) {
+  while (1) {
     Send_Poll();
+    // extra sleep in case cmd session is empty
     usleep(POLL_TICK * 1000);
   }
   return NULL;
 }
 
-static int Start_PollThread(void)
-{
-  int ret;
+static int Start_PollThread(void) {
   pthread_t A_ARR;
-  ret = pthread_create(&A_ARR, 0,PollThread,NULL);
-  if(ret != 0)
-  {
+  int ret = pthread_create(&A_ARR, 0, PollThread, NULL);
+  if (ret != 0) {
     return -1;
   }
   return 0;
 }
 
-unsigned int Get_TimeStamp(void)
-{
+unsigned int Get_TimeStamp(void) {
   struct timeval cur_time;
   gettimeofday(&cur_time,NULL);
   return (cur_time.tv_sec * 1000) + (cur_time.tv_usec / 1000);
 }
 
-void Pro_Link_Setup(void)
-{
+void Pro_Link_Setup(void) {
   DJI_Pro_Rmu_Setup();
   Start_PollThread();
 }
 
-void Pro_Config_Comm_Encrypt_Key(const char *key)
-{
+void Pro_Config_Comm_Encrypt_Key(const char *key) {
   sdk_set_encrypt_key_interface(key);
 }
 
-static unsigned short Pro_Calc_Length(unsigned short size, unsigned short encrypt_flag)
-{
+static unsigned short Pro_Calc_Length(unsigned short size, unsigned short encrypt_flag) {
   unsigned short len;
-  if(encrypt_flag)
-  {
+  if (encrypt_flag) {
     len = size + sizeof(ProHeader) + 4 +  (16 - size % 16);
   }
-  else
-  {
+  else {
     len = size + sizeof(ProHeader) + 4;
   }
   return len;
