@@ -19,14 +19,12 @@ static unsigned char Static_Memory[STATIC_MEMORY_SIZE];
 static CMD_Session_Tab DJI_CMD_Session_Tab[SESSION_TABLE_NUM];
 static ACK_Session_Tab DJI_ACK_Session_Tab[SESSION_TABLE_NUM - 1]; //session 0 is a nak session id
 
-CMD_Session_Tab * Get_CMD_Session_Tab(void)
-{
-	return DJI_CMD_Session_Tab;
+CMD_Session_Tab* Get_CMD_Session_Tab(void) {
+  return DJI_CMD_Session_Tab;
 }
 
-ACK_Session_Tab * Get_ACK_Session_Tab(void)
-{
-	return DJI_ACK_Session_Tab;
+ACK_Session_Tab* Get_ACK_Session_Tab(void) {
+  return DJI_ACK_Session_Tab;
 }
 
 /**
@@ -49,9 +47,8 @@ void MMU_Setup(void) {
   DJI_MMU_Tab[MMU_TABLE_NUM - 1].mem    = Static_Memory + STATIC_MEMORY_SIZE; // [TODO]: this point to an undefined location!!!
 }
 
-void Get_Memory_Lock(void)
-{
-	pthread_mutex_lock(&mmu_lock);
+void Get_Memory_Lock(void) {
+  pthread_mutex_lock(&mmu_lock);
 }
 
 void Free_Memory_Lock(void)
@@ -59,17 +56,16 @@ void Free_Memory_Lock(void)
 	pthread_mutex_unlock(&mmu_lock);
 }
 
-void Free_Memory(MMU_Tab *mmu_tab)
-{
-	if(mmu_tab == (MMU_Tab*)0)
-	{
-		return;
-	}
-    if(mmu_tab->id == 0 || mmu_tab->id == (MMU_TABLE_NUM - 1))
-	{
-		return;
-	}
-    mmu_tab->status = 0;
+void Free_Memory(MMU_Tab* mmu_tab) {
+  if (mmu_tab == (MMU_Tab*)0) {
+    return;
+  }
+
+  if (mmu_tab->id == 0 || mmu_tab->id == (MMU_TABLE_NUM - 1)) {
+    return;
+  }
+
+  mmu_tab->status = 0;
 }
 
 void Display_Memory_Info(void)
@@ -336,13 +332,11 @@ CMD_Session_Tab * Request_CMD_Session(unsigned short session_id,unsigned short s
 	return NULL;
 }
 
-void Free_CMD_Session(CMD_Session_Tab * session)
-{
-	if(session->usage_flag == 1)
-	{
-		Free_Memory(session->mmu);
-		session->usage_flag = 0;
-	}
+void Free_CMD_Session(CMD_Session_Tab* session) {
+  if (session->usage_flag == 1) {
+    Free_Memory(session->mmu);
+    session->usage_flag = 0;
+  }
 }
 
 ACK_Session_Tab * Request_ACK_Session(unsigned short session_id,unsigned short size)

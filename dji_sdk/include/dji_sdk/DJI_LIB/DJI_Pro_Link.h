@@ -8,6 +8,8 @@
 #ifndef DJI_PRO_LINK_H_
 #define DJI_PRO_LINK_H_
 
+#include <stdint.h>
+
 #define DJI_SDK_PRO_VER                     0
 
 #define ACK_SESSION_IDLE					0
@@ -32,21 +34,19 @@ typedef struct ProHeader
 	unsigned int sequence_number : 16;
 	unsigned int head_crc : 16;
 	unsigned int magic[0];
-}ProHeader;
+} ProHeader;
 
 typedef void (*ACK_Callback_Func)(ProHeader *pHeader);
 
-
-typedef struct ProSendParameter
-{
-    unsigned short session_mode : 2;
-	unsigned short need_encrypt : 1;
-	unsigned short retry_time : 13;
-	unsigned short ack_timeout;	//unit is ms
-	unsigned int length;
-	unsigned char *buf;
-	ACK_Callback_Func ack_callback;
-}ProSendParameter;
+typedef struct ProSendParameter {
+  uint16_t session_mode : 2;
+  uint16_t need_encrypt : 1;
+  uint16_t retry_time   : 13;
+  uint16_t ack_timeout;  //unit is ms
+  uint32_t length;
+  uint8_t* buf;
+  ACK_Callback_Func ack_callback;
+} ProSendParameter;
 
 typedef struct ProAckParameter
 {
