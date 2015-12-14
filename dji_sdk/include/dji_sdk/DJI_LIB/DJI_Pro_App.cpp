@@ -23,9 +23,7 @@ static cmd_mission_common_data_t mission_state_data;
 static cmd_mission_common_data_t mission_event_data;
 
 
-void DJI_Pro_App_Send_Data(unsigned char session_mode, unsigned char is_enc, unsigned char  cmd_set, unsigned char cmd_id,
-                           unsigned char *pdata,int len,ACK_Callback_Func ack_callback, int timeout ,int retry_time)
-{
+void DJI_Pro_App_Send_Data(unsigned char session_mode, unsigned char is_enc, unsigned char  cmd_set, unsigned char cmd_id, unsigned char *pdata,int len,ACK_Callback_Func ack_callback, int timeout ,int retry_time) {
   ProSendParameter param;
   unsigned char *ptemp = (unsigned char *)Pro_Encode_Data;
   *ptemp++ = cmd_set;
@@ -45,8 +43,7 @@ void DJI_Pro_App_Send_Data(unsigned char session_mode, unsigned char is_enc, uns
   Pro_Send_Interface(&param);
 }
 
-void DJI_Pro_App_Send_Ack(req_id_t req_id, unsigned char *ack, int len)
-{
+void DJI_Pro_App_Send_Ack(req_id_t req_id, unsigned char *ack, int len) {
   ProAckParameter param;
 
   memcpy(Pro_Encode_ACK,ack,len);
@@ -311,49 +308,38 @@ static activate_data_t from_user_account_data;
 static uint16_t to_user_activation_result;
 
 static void DJI_Pro_Activate_API_CallBack(ProHeader *header) {
-  unsigned short ack_data;
-  if(header->length - EXC_DATA_SIZE <= 2)
-  {
-    memcpy((unsigned char *)&ack_data,(unsigned char *)&header->magic, (header->length - EXC_DATA_SIZE));
+  uint16_t ack_data;
+  if (header->length - EXC_DATA_SIZE <= 2) {
+    memcpy((unsigned char *)&ack_data, (unsigned char *)&header->magic, (header->length - EXC_DATA_SIZE));
     to_user_activation_result = ack_data;
-    if(ack_data == SDK_ACTIVATE_NEW_DEVICE)
-    {
-
+    if(ack_data == SDK_ACTIVATE_NEW_DEVICE) {
     }
-    else
-    {
-      if(ack_data == SDK_ACTIVATE_SUCCESS)
-      {
+    else {
+      if (ack_data == SDK_ACTIVATE_SUCCESS) {
         printf("Activation Successfully\n");
 
         pthread_mutex_lock(&std_msg_lock);
-        std_broadcast_data.activation= 1;
+        std_broadcast_data.activation = 1;
         pthread_mutex_unlock(&std_msg_lock);
 
-        if(from_user_account_data.app_key)
+        if (from_user_account_data.app_key)
           Pro_Config_Comm_Encrypt_Key(from_user_account_data.app_key);
       }
-      else
-      {
-        printf("%s,line %d,activate ERR code:0x%X\n",__func__,__LINE__,ack_data);
+      else {
+        printf("%s, line %d, activate ERR code:0x%X\n", __func__, __LINE__, ack_data);
 
         pthread_mutex_lock(&std_msg_lock);
-        std_broadcast_data.activation= 0;
+        std_broadcast_data.activation = 0;
         pthread_mutex_unlock(&std_msg_lock);
-
       }
-      if(p_activate_api_interface)
-      {
+      if (p_activate_api_interface) {
         p_activate_api_interface(ack_data);
       }
       activate_api_lock = -1;
     }
-
   }
-  else
-  {
-    printf("%s,line %d:ERROR,ACK is exception,seesion id %d,sequence %d\n",
-           __func__,__LINE__,header->session_id,header->sequence_number);
+  else {
+    printf("%s, line %d:ERROR, ACK is exception, seesion id %d, sequence %d\n", __func__, __LINE__, header->session_id, header->sequence_number);
     activate_api_lock = -1;
   }
 }
@@ -364,51 +350,44 @@ static void * Activate_API_Thread_Func(void * arg) {
   from_user_account_data = *((activate_data_t*)arg);
 
   while (1) {
-    DJI_Pro_App_Send_Data(2, 0, MY_ACTIVATION_SET, API_USER_ACTIVATION, (unsigned char*)&from_user_account_data, sizeof(from_user_account_data) - sizeof(char *), DJI_Pro_Activate_API_CallBack, 1000, 1);
+    DJI_Pro_App_Send_Data(2, 0, MY_ACTIVATION_SET, API_USER_ACTIVATION, (unsigned char*)&from_user_account_data, sizeof(from_user_account_data) - sizeof(char*), DJI_Pro_Activate_API_CallBack, 1000, 1);
 
-    usleep(50000);
     sleep(1);
-    if (to_user_activation_result == SDK_ERR_NO_RESPONSE)
-    {
-      printf("--- NO RESPONSE: %d ---\n",__LINE__);
+
+    if (to_user_activation_result == SDK_ERR_NO_RESPONSE) {
+      printf("--- NO RESPONSE: %d ---\n", __LINE__);
 
       pthread_mutex_lock(&std_msg_lock);
-      std_broadcast_data.activation= 2;
+      std_broadcast_data.activation = 2;
       pthread_mutex_unlock(&std_msg_lock);
 
-      if(p_activate_api_interface)
-      {
+      if (p_activate_api_interface) {
         p_activate_api_interface(SDK_ERR_NO_RESPONSE);
       }
       activate_api_lock = -1;
       break;
     }
-    else if(to_user_activation_result == SDK_ACTIVATE_NEW_DEVICE)
-    {
-      if(--retry)
-      {
+    else if (to_user_activation_result == SDK_ACTIVATE_NEW_DEVICE) {
+      if (--retry) {
         printf("Activate try again\n");
         sleep(1);
         continue;
       }
-      else
-      {
-        printf("--- NO RESPONSE:%d ---\n",__LINE__);
+      else {
+        printf("--- NO RESPONSE:%d ---\n", __LINE__);
 
         pthread_mutex_lock(&std_msg_lock);
-        std_broadcast_data.activation= 2;
+        std_broadcast_data.activation = 2;
         pthread_mutex_unlock(&std_msg_lock);
 
-        if(p_activate_api_interface)
-        {
+        if (p_activate_api_interface) {
           p_activate_api_interface(SDK_ERR_NO_RESPONSE);
         }
         activate_api_lock = -1;
         break;
       }
     }
-    else
-    {
+    else {
       break;
     }
   }
@@ -437,36 +416,27 @@ int DJI_Pro_Activate_API(activate_data_t *p_user_data, Command_Result_Notify use
 /*
  *  interface: transparent transmission interface
  */
-
 static Command_Result_Notify p_transparent_data_interface = 0;
 
-static void DJI_Pro_Send_To_Mobile_Device_CallBack(ProHeader *header)
-{
+static void DJI_Pro_Send_To_Mobile_Device_CallBack(ProHeader *header) {
   unsigned short ack_data = 0xFFFF;
-  if(header->length - EXC_DATA_SIZE <= 2)
-  {
+  if (header->length - EXC_DATA_SIZE <= 2) {
     memcpy((unsigned char *)&ack_data,(unsigned char *)&header->magic, (header->length - EXC_DATA_SIZE));
-    if(p_transparent_data_interface)
+    if (p_transparent_data_interface)
       p_transparent_data_interface(ack_data);
   }
-  else
-  {
-    printf("%s,line %d:ERROR,ACK is exception,seesion id %d,sequence %d\n",
-           __func__,__LINE__,header->session_id,header->sequence_number);
+  else {
+    printf("%s, line %d: ERROR, ACK is exception, seesion id %d, sequence %d\n", __func__, __LINE__, header->session_id, header->sequence_number);
   }
 }
 
-int DJI_Pro_Send_To_Mobile_Device(unsigned char *data,unsigned char len,
-                                  Command_Result_Notify user_notice_entrance)
-{
-  if(len > 100)
-  {
+int DJI_Pro_Send_To_Mobile_Device(unsigned char* data, unsigned char len, Command_Result_Notify user_notice_entrance) {
+  if (len > 100) {
     return -1;
   }
 
   p_transparent_data_interface = user_notice_entrance ? user_notice_entrance : 0;
-  DJI_Pro_App_Send_Data(2, 0, MY_ACTIVATION_SET, API_TRANSPARENT_DATA_TO_MOBILE,
-                        data,len,DJI_Pro_Send_To_Mobile_Device_CallBack,500,2);
+  DJI_Pro_App_Send_Data(2, 0, MY_ACTIVATION_SET, API_TRANSPARENT_DATA_TO_MOBILE, data, len, DJI_Pro_Send_To_Mobile_Device_CallBack, 500, 2);
 
   return 0;
 }
@@ -1170,8 +1140,7 @@ int DJI_Pro_Camera_Control(unsigned char camera_cmd)
 /*
  * interface: get cmd set id
  */
-unsigned char DJI_Pro_Get_CmdSet_Id(ProHeader *header)
-{
+unsigned char DJI_Pro_Get_CmdSet_Id(ProHeader *header) {
   unsigned char *ptemp = (unsigned char *)&header->magic;
   return *ptemp;
 }
@@ -1179,14 +1148,13 @@ unsigned char DJI_Pro_Get_CmdSet_Id(ProHeader *header)
 /*
  * interface: get cmd code id
  */
-unsigned char DJI_Pro_Get_CmdCode_Id(ProHeader *header)
-{
+unsigned char DJI_Pro_Get_CmdCode_Id(ProHeader *header) {
   unsigned char *ptemp = (unsigned char *)&header->magic;
-  ptemp ++;
+  ptemp++;
   return *ptemp;
 }
 
-static unsigned short std_msg_flag = 0;
+static uint16_t std_msg_flag = 0;  /**< mainly for debug */
 
 /*
  * interface: get broadcast data
@@ -1215,23 +1183,22 @@ int DJI_Pro_Get_Mission_Event_Data(cmd_mission_common_data_t *p_user_buf)
   return 0;
 }
 
-
 static User_Broadcast_Handler_Func p_user_broadcast_handler_func = 0;
-static Mission_State_Handler_Func p_mission_state_handler_func = 0;
-static Mission_Event_Handler_Func p_mission_event_handler_func = 0;
-static User_Handler_Func p_user_handler_func = 0;
-static Transparent_Transmission_Func p_user_rec_func = 0;
+static Mission_State_Handler_Func p_mission_state_handler_func   = 0;
+static Mission_Event_Handler_Func p_mission_event_handler_func   = 0;
+static User_Handler_Func p_user_handler_func                     = 0;
+static Transparent_Transmission_Func p_user_rec_func             = 0;
 
-static void DJI_Pro_Parse_Broadcast_Data(ProHeader *header)
-{
-  unsigned char *pdata = (unsigned char *)&header->magic;
-  unsigned short *msg_enable_flag;
-  unsigned short data_len = MSG_ENABLE_FLAG_LEN;
+static void DJI_Pro_Parse_Broadcast_Data(ProHeader* header) {
+  unsigned char* pdata = (unsigned char*)&header->magic;
+  uint16_t data_len    = MSG_ENABLE_FLAG_LEN;
+  pdata               += data_len;
+  uint16_t* msg_enable_flag = (uint16_t*)pdata;
+
   pthread_mutex_lock(&std_msg_lock);
-  pdata += 2;
-  msg_enable_flag = (unsigned short *)pdata;
   std_msg_flag = *msg_enable_flag;
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_TIME  ,std_broadcast_data.time_stamp      , pdata, data_len);
+
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_TIME, std_broadcast_data.time_stamp, pdata, data_len);
   PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_Q     ,std_broadcast_data.q               , pdata, data_len);
   PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_A     ,std_broadcast_data.a               , pdata, data_len);
   PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_V     ,std_broadcast_data.v               , pdata, data_len);
@@ -1252,70 +1219,55 @@ static void DJI_Pro_Parse_Broadcast_Data(ProHeader *header)
 /*
  * interface: protocol initialization
  */
-static void DJI_Pro_App_Recv_Req_Data(ProHeader *header)
-{
-  unsigned char buf[100] = {0,0};
-  unsigned char len = 0;
-  switch(header->session_id)
-  {
+static void DJI_Pro_App_Recv_Req_Data(ProHeader *header) {
+  unsigned char buf[100] = {0, 0};
+  uint8_t len = 0;
+  switch (header->session_id) {
     case 0:
-      if(DJI_Pro_Get_CmdSet_Id(header) == MY_BROADCAST_CMD_SET
-         && DJI_Pro_Get_CmdCode_Id(header) == API_STD_DATA)
-      {
+      if (DJI_Pro_Get_CmdSet_Id(header) == MY_BROADCAST_CMD_SET
+         && DJI_Pro_Get_CmdCode_Id(header) == API_STD_DATA) {
         DJI_Pro_Parse_Broadcast_Data(header);
       }
-      else if(DJI_Pro_Get_CmdSet_Id(header) == MY_BROADCAST_CMD_SET
-              && DJI_Pro_Get_CmdCode_Id(header) == API_TRANSPARENT_DATA_TO_OBOARD)
-      {
-        if(p_user_rec_func)
-        {
+      else if (DJI_Pro_Get_CmdSet_Id(header) == MY_BROADCAST_CMD_SET
+              && DJI_Pro_Get_CmdCode_Id(header) == API_TRANSPARENT_DATA_TO_OBOARD) {
+        if (p_user_rec_func) {
           len = (header->length - EXC_DATA_SIZE -2) > 100 ? 100 :
                 (header->length - EXC_DATA_SIZE -2);
-          memcpy(buf,(unsigned char*)&header->magic + 2,len);
-          p_user_rec_func(buf,len);
+          memcpy(buf, (unsigned char*)&header->magic + 2, len);
+          p_user_rec_func(buf, len);
         }
       }
       else if (DJI_Pro_Get_CmdSet_Id(header) == MY_BROADCAST_CMD_SET
-               && DJI_Pro_Get_CmdCode_Id(header) == API_MISSION_DATA)
-      {
+               && DJI_Pro_Get_CmdCode_Id(header) == API_MISSION_DATA) {
         pthread_mutex_lock(&mission_state_lock);
-        memcpy((unsigned char*)&mission_state_data, (unsigned char*)header->magic,(header->length - EXC_DATA_SIZE));
+        memcpy((unsigned char*)&mission_state_data, (unsigned char*)header->magic, (header->length - EXC_DATA_SIZE));
         pthread_mutex_unlock(&mission_state_lock);
         if (p_mission_state_handler_func)
           p_mission_state_handler_func();
       }
-
       else if (DJI_Pro_Get_CmdSet_Id(header) == MY_BROADCAST_CMD_SET
-               && DJI_Pro_Get_CmdCode_Id(header) == API_WAYPOINT_DATA)
-      {
+               && DJI_Pro_Get_CmdCode_Id(header) == API_WAYPOINT_DATA) {
         pthread_mutex_lock(&mission_event_lock);
         memcpy((unsigned char*)&mission_event_data, (unsigned char*)header->magic,(header->length - EXC_DATA_SIZE));
         pthread_mutex_unlock(&mission_event_lock);
         if (p_mission_event_handler_func)
           p_mission_event_handler_func();
       }
-
-      else
-      {
-        if(p_user_handler_func)
-        {
+      else {
+        if (p_user_handler_func) {
           p_user_handler_func(header);
         }
       }
       break;
     case 1:
     case 2:
-      if(p_user_handler_func)
-      {
+      if (p_user_handler_func) {
         p_user_handler_func(header);
       }
-      else
-      {
+      else {
         ProAckParameter param;
-        printf("%s:Recv request,session id=%d,seq_num=%d\n",
-               __func__,header->session_id,header->sequence_number);
-        if(header->session_id > 0)
-        {
+        printf("%s: Recv request, session id = %d, seq_num = %d\n", __func__, header->session_id, header->sequence_number);
+        if (header->session_id > 0) {
           buf[0] = buf[1] = 0;
           param.session_id = header->session_id;
           param.seq_num = header->sequence_number;
@@ -1341,8 +1293,7 @@ int DJI_Pro_Register_Broadcast_Callback(User_Broadcast_Handler_Func user_broadca
   return 0;
 }
 
-int DJI_Pro_Register_Mission_State_Callback(Mission_State_Handler_Func mission_state_handler_entrance)
-{
+int DJI_Pro_Register_Mission_State_Callback(Mission_State_Handler_Func mission_state_handler_entrance) {
   p_mission_state_handler_func = mission_state_handler_entrance;
   return 0;
 }
@@ -1353,8 +1304,7 @@ int DJI_Pro_Register_Mission_Event_Callback(Mission_Event_Handler_Func mission_e
   return 0;
 }
 
-int DJI_Pro_Setup(User_Handler_Func user_cmd_handler_entrance)
-{
+int DJI_Pro_Setup(User_Handler_Func user_cmd_handler_entrance) {
   Pro_Link_Setup();
   Pro_App_Recv_Set_Hook(DJI_Pro_App_Recv_Req_Data);
   p_user_handler_func = user_cmd_handler_entrance ? user_cmd_handler_entrance : 0;

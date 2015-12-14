@@ -12,24 +12,23 @@
 
 #define DJI_SDK_PRO_VER                     0
 
-#define POLL_TICK							20  //unit is ms
+#define POLL_TICK                           20  // unit is ms
 
-typedef struct ProHeader
-{
-	unsigned int sof : 8; 			// 1byte
-	unsigned int length : 10;
-	unsigned int version : 6; 		// 2byte
-	unsigned int session_id : 5;
-	unsigned int is_ack : 1;
-	unsigned int reversed0 : 2; 	// always 0
+typedef struct ProHeader {
+  unsigned int sof             : 8;  // 1byte
+  unsigned int length          : 10;
+  unsigned int version         : 6;  // 2byte
+  unsigned int session_id      : 5;
+  unsigned int is_ack          : 1;
+  unsigned int reversed0       : 2;  // always 0
 
-	unsigned int padding : 5;
-	unsigned int enc_type : 3;
-	unsigned int reversed1 : 24;
+  unsigned int padding         : 5;
+  unsigned int enc_type        : 3;
+  unsigned int reversed1       : 24;
 
-	unsigned int sequence_number : 16;
-	unsigned int head_crc : 16;
-	unsigned int magic[0];
+  unsigned int sequence_number : 16;
+  unsigned int head_crc        : 16;
+  unsigned int magic[0];
 } ProHeader;
 
 typedef void (*ACK_Callback_Func)(ProHeader *pHeader);

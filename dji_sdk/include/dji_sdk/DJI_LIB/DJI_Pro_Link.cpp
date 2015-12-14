@@ -71,7 +71,7 @@ void Pro_Link_Recv_Hook(ProHeader *header) {
     }
   }
   else {
-    // handle request
+    // handle request(normal data)
     switch (id_to_check) {
       case 0:  // leave session 0 to user handler
         Pro_Request_Interface(header);
@@ -320,12 +320,19 @@ void Pro_App_Recv_Set_Hook(Req_Callback_Func p_hook) {
   APP_Recv_Hook = p_hook;
 }
 
+/// \brief protocal request interface
+///
+/// envoke common(non ack?) data handling function,
+/// APP_Recv_Hook should normally be setup as
+/// DJI_Pro_App_Recv_Req_Data()
 void Pro_Request_Interface(ProHeader* header) {
   // TODO call app data handler interface here
   if (APP_Recv_Hook) {
     APP_Recv_Hook(header);
   }
   else {
+    // which should never happen
+
     printf("%s: Recv request, session id = %d, seq_num = %d\n",
            __func__, header->session_id, header->sequence_number);
     if (header->session_id > 0) {

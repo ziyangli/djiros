@@ -384,12 +384,19 @@ typedef struct
 #define SDK_ACTIVATE_LEVEL_ERROR            0x0007
 #define SDK_ACTIVATE_SDK_VERSION_ERROR      0x0008
 
-#define PARSE_STD_MSG(_flag, _enable, _data, _buf, _datalen)            \
-  if((_flag & _enable))                                                 \
-  {                                                                     \
-    memcpy((unsigned char *)&(_data),(unsigned char *)(_buf)+(_datalen), sizeof(_data)); \
+#define PARSE_STD_MSG(_flag, _enable, _data, _buf, _datalen)   \
+  if ((_flag & _enable)) {                                     \
+    memcpy((unsigned char *)&(_data), (unsigned char *)(_buf) + (_datalen), sizeof(_data)); \
     _datalen += sizeof(_data);                                          \
   }
+
+// macro to extract data
+#define _buf_to_slot(_slot, _buf, _skiplen) \
+    { \
+        memcpy((uint8_t *)&(_slot), (uint8_t *)(_buf)+(_skiplen), sizeof(_slot)); \
+        _skiplen += sizeof(_slot); \
+    }
+
 
 #pragma  pack(1)
 
