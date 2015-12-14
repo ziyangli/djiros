@@ -396,35 +396,30 @@ typedef struct
 /*
  *struct of activate data
  */
-
-typedef struct
-{
-  unsigned int  app_id;
-  unsigned int  app_api_level;
-  unsigned int  app_ver;
+typedef struct {
+  uint32_t      app_id;
+  uint32_t      app_api_level;
+  uint32_t      app_ver;
   unsigned char app_bundle_id[32];
   char *app_key;
-}activate_data_t;
+} activate_data_t;
 
 /*
  *struct of version query data
  */
-
-typedef struct
-{
-  unsigned short    version_ack;
-  unsigned int  version_crc;
-  char      version_name[32];
-}version_query_data_t;
+typedef struct {
+  uint16_t version_ack;
+  uint32_t version_crc;
+  char     version_name[32];
+} version_query_data_t;
 
 /*
  * struct of set frequency
  */
 
-typedef struct
-{
+typedef struct {
   unsigned char std_freq[16];
-}sdk_msgs_frequency_data_t;
+} sdk_msgs_frequency_data_t;
 
 /*
  *struct of attitude data

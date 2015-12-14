@@ -362,6 +362,7 @@ static void * Activate_API_Thread_Func(void * arg) {
   int retry = 12;
 
   from_user_account_data = *((activate_data_t*)arg);
+
   while (1) {
     DJI_Pro_App_Send_Data(2, 0, MY_ACTIVATION_SET, API_USER_ACTIVATION, (unsigned char*)&from_user_account_data, sizeof(from_user_account_data) - sizeof(char *), DJI_Pro_Activate_API_CallBack, 1000, 1);
 
