@@ -361,21 +361,16 @@ static void DJI_Pro_Activate_API_CallBack(ProHeader *header)
     }
 }
 
-static void * Activate_API_Thread_Func(void * arg)
-{
+static void * Activate_API_Thread_Func(void * arg) {
     int retry = 12;
     activate_data_t *temp_data_t = (activate_data_t *)arg;
     from_user_account_data = *temp_data_t;
-    while(1)
-    {
-        DJI_Pro_App_Send_Data( 2, 0, MY_ACTIVATION_SET, API_USER_ACTIVATION,
-                   (unsigned char*)&from_user_account_data,
-                   sizeof(from_user_account_data) - sizeof(char *),
-                   DJI_Pro_Activate_API_CallBack,1000,1);
+    while (1) {
+        DJI_Pro_App_Send_Data(2, 0, MY_ACTIVATION_SET, API_USER_ACTIVATION, (unsigned char*)&from_user_account_data, sizeof(from_user_account_data) - sizeof(char *), DJI_Pro_Activate_API_CallBack, 1000, 1);
 
         usleep(50000);
         sleep(1);
-        if(to_user_activation_result == SDK_ERR_NO_RESPONSE)
+        if (to_user_activation_result == SDK_ERR_NO_RESPONSE)
         {
             printf("--- NO RESPONSE: %d ---\n",__LINE__);
 
