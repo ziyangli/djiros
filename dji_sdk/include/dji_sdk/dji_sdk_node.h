@@ -9,8 +9,14 @@
 #include <actionlib/server/simple_action_server.h>
 #include <dji_sdk/dji_sdk_mission.h>
 
-#define C_EARTH (double) 6378137.0
-#define C_PI (double) 3.141592653589793
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/MagneticField.h>
+#include <sensor_msgs/FluidPressure.h>
+
+#define C_G          (double) 9.80665
+#define C_EARTH      (double) 6378137.0
+#define C_PI         (double) 3.141592653589793
 
 class DJISDKNode {
  private:
@@ -31,9 +37,9 @@ class DJISDKNode {
   nav_msgs::Odometry odometry;
   dji_sdk::TimeStamp time_stamp;
 
-  bool sdk_permission_opened = false;
-  bool activated = false;
-  bool localposbase_use_height = true;
+  bool sdk_permission_opened    = false;
+  bool activated                = false;
+  bool localposbase_use_height  = true;
 
   int global_position_ref_seted = 0;
 
@@ -41,40 +47,18 @@ class DJISDKNode {
   char app_key[65];
   activate_data_t user_act_data;
 
-  //Publishers:
-  ros::Publisher acceleration_publisher;
-  ros::Publisher attitude_quaternion_publisher;
-  ros::Publisher compass_publisher;
-  ros::Publisher flight_control_info_publisher;
-  ros::Publisher flight_status_publisher;
-  ros::Publisher gimbal_publisher;
-  ros::Publisher global_position_publisher;
-  ros::Publisher local_position_publisher;
-  ros::Publisher power_status_publisher;
-  ros::Publisher rc_channels_publisher;
-  ros::Publisher velocity_publisher;
-  ros::Publisher activation_publisher;
-  ros::Publisher odometry_publisher;
-  ros::Publisher sdk_permission_publisher;
-  ros::Publisher time_stamp_publisher;
+  // Publishers:
+  ros::Publisher imu_pub;
+  ros::Publisher gps_pub;
+  ros::Publisher baro_pub;
+  ros::Publisher mag_pub;
 
   void init_publishers(ros::NodeHandle& nh) {
     // start ros publisher
-    acceleration_publisher = nh.advertise<dji_sdk::Acceleration>("dji_sdk/acceleration", 10);
-    attitude_quaternion_publisher = nh.advertise<dji_sdk::AttitudeQuaternion>("dji_sdk/attitude_quaternion", 10);
-    compass_publisher = nh.advertise<dji_sdk::Compass>("dji_sdk/compass", 10);
-    flight_control_info_publisher = nh.advertise<dji_sdk::FlightControlInfo>("dji_sdk/flight_control_info", 10);
-    flight_status_publisher = nh.advertise<std_msgs::UInt8>("dji_sdk/flight_status", 10);
-    gimbal_publisher = nh.advertise<dji_sdk::Gimbal>("dji_sdk/gimbal", 10);
-    global_position_publisher = nh.advertise<dji_sdk::GlobalPosition>("dji_sdk/global_position", 10);
-    local_position_publisher = nh.advertise<dji_sdk::LocalPosition>("dji_sdk/local_position", 10);
-    power_status_publisher = nh.advertise<dji_sdk::PowerStatus>("dji_sdk/power_status", 10);
-    rc_channels_publisher = nh.advertise<dji_sdk::RCChannels>("dji_sdk/rc_channels", 10);
-    velocity_publisher = nh.advertise<dji_sdk::Velocity>("dji_sdk/velocity", 10);
-    activation_publisher = nh.advertise<std_msgs::UInt8>("dji_sdk/activation", 10);
-    odometry_publisher = nh.advertise<nav_msgs::Odometry>("dji_sdk/odometry",10);
-    sdk_permission_publisher = nh.advertise<std_msgs::UInt8>("dji_sdk/sdk_permission", 10);
-    time_stamp_publisher = nh.advertise<dji_sdk::TimeStamp>("dji_sdk/time_stamp", 10);
+    imu_pub      = nh.advertise<sensor_msgs::Imu>("imu", 1);
+    gps_pub      = nh.advertise<sensor_msgs::NavSatFix>("gps", 1);
+    mag_pub      = nh.advertise<sensor_msgs::MagneticField>("mag", 1);
+    baro_pub     = nh.advertise<sensor_msgs::FluidPressure>("baro", 1);
   }
 
   //Services:
@@ -180,11 +164,9 @@ class DJISDKNode {
 
   bool process_waypoint(dji_sdk::Waypoint new_waypoint);
 
-  inline void gps_convert_ned(float &ned_x, float &ned_y,
-                              double gps_t_lon, double gps_t_lat,
-                              double gps_r_lon, double gps_r_lat);
+  void gps_convert_ned(float &ned_x, float &ned_y, double gps_t_lon, double gps_t_lat, double gps_r_lon, double gps_r_lat);
 
-  dji_sdk::LocalPosition gps_convert_ned(dji_sdk::GlobalPosition loc);
+  // dji_sdk::LocalPosition gps_convert_ned(dji_sdk::GlobalPosition loc);
 };
 
 #endif

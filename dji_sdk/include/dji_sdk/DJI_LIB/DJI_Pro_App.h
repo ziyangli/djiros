@@ -142,28 +142,26 @@ typedef struct
   unsigned char duration;
 }gimbal_custom_control_angle_t;
 
-typedef struct
-{
-  signed short yaw_angle_rate;
-  signed short roll_angle_rate;
-  signed short pitch_angle_rate;
-  struct
-  {
-    unsigned char reserve : 7; unsigned char ctrl_switch : 1;//enable or disable
-  }ctrl_byte;
-}gimbal_custom_speed_t;
+typedef struct {
+  int16_t yaw_angle_rate;
+  int16_t roll_angle_rate;
+  int16_t pitch_angle_rate;
+  struct {
+    unsigned char reserve     : 7;
+    unsigned char ctrl_switch : 1; //enable or disable
+  } ctrl_byte;
+} gimbal_custom_speed_t;
 
 /*
  *struct of quaternion data
  */
 
-typedef struct
-{
+typedef struct {
   fp32 q0;
   fp32 q1;
   fp32 q2;
   fp32 q3;
-}api_quaternion_data_t;
+} api_quaternion_data_t;
 
 typedef struct {
   fp32 x;
@@ -174,7 +172,6 @@ typedef struct {
 /*
  *struct of vellocity data
  */
-
 typedef struct {
   fp32 x;
   fp32 y;
@@ -188,67 +185,63 @@ typedef struct {
  *struct of GPS data
  */
 typedef struct {
-  fp64 lati;
-  fp64 longti;
-  fp32 alti;
-  fp32 height;
-  unsigned char health_flag;
+  fp64    lati;
+  fp64    longti;
+  fp32    alti;
+  fp32    height;
+  uint8_t health;
 } api_pos_data_t;
 
 /*
  * struct of RC data
  */
-typedef struct
-{
-  signed short roll;
-  signed short pitch;
-  signed short yaw;
-  signed short throttle;
-  signed short mode;
-  signed short gear;
-}api_rc_data_t;
+typedef struct {
+  int16_t roll;
+  int16_t pitch;
+  int16_t yaw;
+  int16_t throttle;
+  int16_t mode;
+  int16_t gear;
+} api_rc_data_t;
 
 /*
  * struct of compass data
  */
-typedef struct
-{
-  signed short x;
-  signed short y;
-  signed short z;
-}api_mag_data_t;
+typedef struct {
+  int16_t x;
+  int16_t y;
+  int16_t z;
+} api_mag_data_t;
 
 /*
  * struct of ctrl device data
  */
-typedef struct
-{
-  unsigned char cur_api_ctrl_mode;
-  unsigned char cur_ctrl_dev_in_navi_mode   :3;/*0->rc  1->app  2->serial*/
-  unsigned char serial_req_status           :1;/*1->opensd  0->close*/
-  unsigned char reserved                    :4;
-}api_ctrl_info_data_t;
+typedef struct {
+  uint8_t cur_api_ctrl_mode;
+  uint8_t cur_ctrl_dev_in_navi_mode : 3;  /*0->rc  1->app  2->serial*/
+  uint8_t serial_req_status         : 1;  /*1->open  0->close*/
+  uint8_t reserved                  : 4;
+} api_ctrl_info_data_t;
 
 /*
  * struct of gimbal data
  */
-typedef struct
-{
+typedef struct {
   fp32 roll;
   fp32 pitch;
   fp32 yaw;
-  unsigned char is_pitch_limit  :1;
-  unsigned char is_roll_limit   :1;
-  unsigned char is_yaw_limit        :1;
-  unsigned char reserved            :5;
-}api_gimbal_data_t;
+  unsigned char is_pitch_limit :1;
+  unsigned char is_roll_limit  :1;
+  unsigned char is_yaw_limit   :1;
+  unsigned char reserved       :5;
+} api_gimbal_data_t;
 
 /*
  * struct of time stamp data
  */
 typedef struct {
-  uint32_t time;
-  uint32_t asr_ts;
+  uint32_t      time;
+  uint32_t      asr_ts;
   unsigned char sync_flag;
 } api_time_stamp_t;
 
@@ -265,10 +258,12 @@ typedef struct {
   api_mag_data_t        mag;
   api_rc_data_t         rc;
   api_gimbal_data_t     gimbal;
-  unsigned char         status;
-  unsigned char         battery_remaining_capacity;
+  uint8_t               status;
+  uint8_t               battery_remaining_capacity;
   api_ctrl_info_data_t  ctrl_info;
-  uint8_t               obtained_control;
+
+  ///<control status, 0->release, 1->obtained, 2->failed, 3->unknown error
+  uint8_t               ctrl_status;
   uint8_t               activation;
 } sdk_std_msg_t;
 
@@ -389,14 +384,6 @@ typedef struct
     memcpy((unsigned char *)&(_data), (unsigned char *)(_buf) + (_datalen), sizeof(_data)); \
     _datalen += sizeof(_data);                                          \
   }
-
-// macro to extract data
-#define _buf_to_slot(_slot, _buf, _skiplen) \
-    { \
-        memcpy((uint8_t *)&(_slot), (uint8_t *)(_buf)+(_skiplen), sizeof(_slot)); \
-        _skiplen += sizeof(_slot); \
-    }
-
 
 #pragma  pack(1)
 

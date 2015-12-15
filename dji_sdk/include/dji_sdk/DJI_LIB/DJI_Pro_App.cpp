@@ -447,53 +447,46 @@ int DJI_Pro_Send_To_Mobile_Device(unsigned char* data, unsigned char len, Comman
 
 static Command_Result_Notify p_control_management_interface = 0;
 
-static void DJI_Pro_Control_Management_CallBack(ProHeader *header)
-{
+static void DJI_Pro_Control_Management_CallBack(ProHeader *header) {
   unsigned short ack_data = 0xFFFF;
-  if(header->length - EXC_DATA_SIZE <= 2)
-  {
+  if (header->length - EXC_DATA_SIZE <= 2) {
     memcpy((unsigned char *)&ack_data,(unsigned char *)&header->magic, (header->length - EXC_DATA_SIZE));
-    if(p_control_management_interface)
+    if (p_control_management_interface)
       p_control_management_interface(ack_data);
-
   }
-  else
-  {
-    printf("%s,line %d:ERROR,ACK is exception,seesion id %d,sequence %d\n",
-           __func__,__LINE__,header->session_id,header->sequence_number);
+  else {
+    printf("%s, line %d: ERROR, ACK is exception, seesion id %d, sequence %d\n", __func__, __LINE__, header->session_id, header->sequence_number);
   }
 
-  switch(ack_data)
-  {
+  switch (ack_data) {
     case 0x0001:
-      printf("%s,line %d, release control successfully\n",__func__,__LINE__);
+      printf("%s, line %d, release control successfully\n", __func__, __LINE__);
       pthread_mutex_lock(&std_msg_lock);
-      std_broadcast_data.obtained_control= 0;
+      std_broadcast_data.ctrl_status = 0;
       pthread_mutex_unlock(&std_msg_lock);
       break;
     case 0x0002:
-      printf("%s,line %d, obtain control successfully\n",__func__,__LINE__);
+      printf("%s, line %d, obtain control successfully\n", __func__, __LINE__);
       pthread_mutex_lock(&std_msg_lock);
-      std_broadcast_data.obtained_control = 1;
+      std_broadcast_data.ctrl_status = 1;
       pthread_mutex_unlock(&std_msg_lock);
       break;
     case 0x0003:
-      printf("%s,line %d, obtain control failed\n",__func__,__LINE__);
+      printf("%s, line %d, obtain control failed\n", __func__, __LINE__);
       pthread_mutex_lock(&std_msg_lock);
-      std_broadcast_data.obtained_control = 2;
+      std_broadcast_data.ctrl_status = 2;
       pthread_mutex_unlock(&std_msg_lock);
       break;
     default:
-      printf("%s,line %d, there is unkown error,ack=0x%X\n",__func__,__LINE__,ack_data);
+      printf("%s, line %d, there is unkown error, ack=0x%X\n", __func__, __LINE__, ack_data);
       pthread_mutex_lock(&std_msg_lock);
-      std_broadcast_data.obtained_control = 3;
+      std_broadcast_data.ctrl_status = 3;
       pthread_mutex_unlock(&std_msg_lock);
       break;
   }
 }
 
-int DJI_Pro_Control_Management(unsigned char cmd,Command_Result_Notify user_notice_entrance)
-{
+int DJI_Pro_Control_Management(unsigned char cmd,Command_Result_Notify user_notice_entrance) {
   unsigned char data = cmd & 0x1;
   DJI_Pro_App_Send_Data(2,1, MY_CTRL_CMD_SET, API_CTRL_MANAGEMENT,
                         &data,1,NULL,500,1);
@@ -508,11 +501,8 @@ int DJI_Pro_Control_Management(unsigned char cmd,Command_Result_Notify user_noti
  *  interface: attitude control interface
  */
 
-int DJI_Pro_Attitude_Control(attitude_data_t *p_user_data)
-{
-  DJI_Pro_App_Send_Data(0,1, MY_CTRL_CMD_SET, API_CTRL_REQUEST,
-                        (unsigned char *)p_user_data,sizeof(attitude_data_t),
-                        0,0,1);
+int DJI_Pro_Attitude_Control(attitude_data_t *p_user_data) {
+  DJI_Pro_App_Send_Data(0, 1, MY_CTRL_CMD_SET, API_CTRL_REQUEST, (unsigned char *)p_user_data, sizeof(attitude_data_t), 0, 0, 1);
   return 0;
 }
 
@@ -1199,19 +1189,20 @@ static void DJI_Pro_Parse_Broadcast_Data(ProHeader* header) {
   std_msg_flag = *msg_enable_flag;
 
   PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_TIME, std_broadcast_data.time_stamp, pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_Q     ,std_broadcast_data.q               , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_A     ,std_broadcast_data.a               , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_V     ,std_broadcast_data.v               , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_W     ,std_broadcast_data.w               , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_POS     ,std_broadcast_data.pos               , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_MAG     ,std_broadcast_data.mag               , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_RC        ,std_broadcast_data.rc              , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_GIMBAL    ,std_broadcast_data.gimbal          , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_STATUS    ,std_broadcast_data.status          , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_BATTERY ,std_broadcast_data.battery_remaining_capacity    , pdata, data_len);
-  PARSE_STD_MSG( *msg_enable_flag, ENABLE_MSG_DEVICE    ,std_broadcast_data.ctrl_info           , pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_Q, std_broadcast_data.q, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_A, std_broadcast_data.a, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_V, std_broadcast_data.v, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_W, std_broadcast_data.w, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_POS, std_broadcast_data.pos, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_MAG, std_broadcast_data.mag, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_RC, std_broadcast_data.rc, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_GIMBAL, std_broadcast_data.gimbal, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_STATUS, std_broadcast_data.status, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_BATTERY, std_broadcast_data.battery_remaining_capacity, pdata, data_len);
+  PARSE_STD_MSG(*msg_enable_flag, ENABLE_MSG_DEVICE, std_broadcast_data.ctrl_info, pdata, data_len);
   pthread_mutex_unlock(&std_msg_lock);
 
+  // normally ros handler
   if (p_user_broadcast_handler_func)
     p_user_broadcast_handler_func();
 }
@@ -1225,11 +1216,11 @@ static void DJI_Pro_App_Recv_Req_Data(ProHeader *header) {
   switch (header->session_id) {
     case 0:
       if (DJI_Pro_Get_CmdSet_Id(header) == MY_BROADCAST_CMD_SET
-         && DJI_Pro_Get_CmdCode_Id(header) == API_STD_DATA) {
+          && DJI_Pro_Get_CmdCode_Id(header) == API_STD_DATA) {
         DJI_Pro_Parse_Broadcast_Data(header);
       }
       else if (DJI_Pro_Get_CmdSet_Id(header) == MY_BROADCAST_CMD_SET
-              && DJI_Pro_Get_CmdCode_Id(header) == API_TRANSPARENT_DATA_TO_OBOARD) {
+               && DJI_Pro_Get_CmdCode_Id(header) == API_TRANSPARENT_DATA_TO_OBOARD) {
         if (p_user_rec_func) {
           len = (header->length - EXC_DATA_SIZE -2) > 100 ? 100 :
                 (header->length - EXC_DATA_SIZE -2);
@@ -1287,8 +1278,7 @@ int DJI_Pro_Register_Transparent_Transmission_Callback(Transparent_Transmission_
   return 0;
 }
 
-int DJI_Pro_Register_Broadcast_Callback(User_Broadcast_Handler_Func user_broadcast_handler_entrance)
-{
+int DJI_Pro_Register_Broadcast_Callback(User_Broadcast_Handler_Func user_broadcast_handler_entrance) {
   p_user_broadcast_handler_func = user_broadcast_handler_entrance;
   return 0;
 }
