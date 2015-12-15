@@ -23,7 +23,7 @@ static cmd_mission_common_data_t mission_state_data;
 static cmd_mission_common_data_t mission_event_data;
 
 
-void DJI_Pro_App_Send_Data(unsigned char session_mode, unsigned char is_enc, unsigned char  cmd_set, unsigned char cmd_id, unsigned char *pdata,int len,ACK_Callback_Func ack_callback, int timeout ,int retry_time) {
+void DJI_Pro_App_Send_Data(unsigned char session_mode, unsigned char is_enc, unsigned char cmd_set, unsigned char cmd_id, unsigned char *pdata,int len,ACK_Callback_Func ack_callback, int timeout ,int retry_time) {
   ProSendParameter param;
   unsigned char *ptemp = (unsigned char *)Pro_Encode_Data;
   *ptemp++ = cmd_set;
@@ -33,11 +33,11 @@ void DJI_Pro_App_Send_Data(unsigned char session_mode, unsigned char is_enc, uns
 
   param.ack_callback = ack_callback;
   param.session_mode = session_mode;
-  param.length = len + SET_CMD_SIZE;
-  param.buf = Pro_Encode_Data;
-  param.retry_time = retry_time;
+  param.length       = len + SET_CMD_SIZE;
+  param.buf          = Pro_Encode_Data;
+  param.retry_time   = retry_time;
 
-  param.ack_timeout = timeout;
+  param.ack_timeout  = timeout;
   param.need_encrypt = is_enc;
 
   Pro_Send_Interface(&param);
@@ -71,84 +71,6 @@ static int DJI_Pro_Create_Thread(void *(* func)(void *), void *arg) {
 static int get_api_ver_lock = -1;
 static Get_API_Version_Notify p_get_api_ver_interface = 0;
 static version_query_data_t to_user_version_data;
-
-static void DJI_Pro_Get_API_Version_CallBack(ProHeader *header)
-{
-  unsigned char *ptemp = (unsigned char *)&header->magic;
-  char *ptemp2;
-  int count = 31;
-  version_query_data_t *p_version_data = &to_user_version_data;
-  Get_API_Version_Notify p_temp_interface;
-
-  p_version_data->version_ack = ptemp[0] + (ptemp[1] << 8);
-  ptemp += 2;
-  p_version_data->version_crc = ptemp[0] + (ptemp[1] << 8) +
-                                (ptemp[2] << 16) + (ptemp[3] << 24);
-  ptemp += 4;
-  ptemp2 = p_version_data->version_name;
-  while(*ptemp && count)
-  {
-    *ptemp2 ++ = (char)*ptemp ++;
-    count --;
-  }
-  *ptemp2 = 0;
-
-  if(p_get_api_ver_interface)
-  {
-    p_temp_interface = p_get_api_ver_interface;
-    p_get_api_ver_interface = 0;
-    p_temp_interface(&to_user_version_data);
-  }
-  else
-  {
-    printf("%s,version ack=%d\n",__func__,p_version_data->version_ack);
-    printf("%s,version crc=0x%X\n",__func__,p_version_data->version_crc);
-    printf("%s,version name=%s\n",__func__,p_version_data->version_name);
-  }
-}
-
-static void * Get_API_Version_Thread_Func(void * arg)
-{
-  version_query_data_t *p_version_data = (version_query_data_t*)arg;
-
-  unsigned cmd_timeout = 100;    //unit is ms
-  unsigned retry_time = 3;
-  unsigned char cmd_data = 0;
-
-  DJI_Pro_App_Send_Data(2,0,MY_ACTIVATION_SET, API_VER_QUERY,(unsigned char*)&cmd_data,
-                        1,DJI_Pro_Get_API_Version_CallBack,cmd_timeout, retry_time);
-
-  usleep((cmd_timeout + 50) * retry_time * 1000);
-  /* delay more 50ms to avoid call user notice interface at the same time*/
-  if(p_get_api_ver_interface)
-  {
-    p_get_api_ver_interface(p_version_data);
-  }
-
-  get_api_ver_lock = -1;
-  return (void*)NULL;
-}
-
-int DJI_Pro_Get_API_Version(Get_API_Version_Notify user_notice_entrance)
-{
-  if(get_api_ver_lock == 0)
-  {
-    return -1;
-  }
-  get_api_ver_lock = 0;
-
-  p_get_api_ver_interface = user_notice_entrance ? user_notice_entrance : 0;
-  to_user_version_data.version_ack = 0xFFFF;
-  to_user_version_data.version_crc = 0x0;
-  to_user_version_data.version_name[0] = 0;
-
-  if(DJI_Pro_Create_Thread(Get_API_Version_Thread_Func,&to_user_version_data) != 0)
-  {
-    get_api_ver_lock = -1;
-    return -1;
-  }
-  return 0;
-}
 
 /*
  *  interface: activation interface
@@ -300,9 +222,10 @@ int DJI_Pro_Send_To_Mobile_Device(unsigned char* data, unsigned char len, Comman
 static Command_Result_Notify p_control_management_interface = 0;
 
 static void DJI_Pro_Control_Management_CallBack(ProHeader *header) {
-  unsigned short ack_data = 0xFFFF;
+  uint16_t ack_data = 0xFFFF;
   if (header->length - EXC_DATA_SIZE <= 2) {
-    memcpy((unsigned char *)&ack_data,(unsigned char *)&header->magic, (header->length - EXC_DATA_SIZE));
+    memcpy((unsigned char*)&ack_data, (unsigned char*)&header->magic, (header->length - EXC_DATA_SIZE));
+
     if (p_control_management_interface)
       p_control_management_interface(ack_data);
   }
@@ -338,14 +261,15 @@ static void DJI_Pro_Control_Management_CallBack(ProHeader *header) {
   }
 }
 
-int DJI_Pro_Control_Management(unsigned char cmd,Command_Result_Notify user_notice_entrance) {
-  unsigned char data = cmd & 0x1;
-  DJI_Pro_App_Send_Data(2,1, MY_CTRL_CMD_SET, API_CTRL_MANAGEMENT,
-                        &data,1,NULL,500,1);
+int DJI_Pro_Control_Management(uint8_t cmd, Command_Result_Notify user_notice_entrance) {
+  uint8_t data = cmd & 0x1;  // only get the last bit
+  DJI_Pro_App_Send_Data(2, 1, MY_CTRL_CMD_SET, API_CTRL_MANAGEMENT,
+                        &data, 1, NULL, 500, 1);
   usleep(50000);
   p_control_management_interface = user_notice_entrance ? user_notice_entrance : 0;
-  DJI_Pro_App_Send_Data(2,1, MY_CTRL_CMD_SET, API_CTRL_MANAGEMENT,
-                        &data,1,DJI_Pro_Control_Management_CallBack,500,1);
+
+  // request again to update state
+  DJI_Pro_App_Send_Data(2, 1, MY_CTRL_CMD_SET, API_CTRL_MANAGEMENT, &data, 1, DJI_Pro_Control_Management_CallBack, 500, 1);
   return 0;
 }
 
@@ -372,11 +296,8 @@ int DJI_Pro_Gimbal_Angle_Control(gimbal_custom_control_angle_t *p_user_data)
 /*
  *  interface: gimbal angle speed control interface
  */
-int DJI_Pro_Gimbal_Speed_Control(gimbal_custom_speed_t *p_user_data)
-{
-  DJI_Pro_App_Send_Data(0,1, MY_CTRL_CMD_SET, API_GIMBAL_CTRL_SPEED_REQUEST,
-                        (unsigned char *)p_user_data,sizeof(gimbal_custom_speed_t),
-                        0,0,1);
+int DJI_Pro_Gimbal_Speed_Control(gimbal_custom_speed_t *p_user_data) {
+  DJI_Pro_App_Send_Data(0, 1, MY_CTRL_CMD_SET, API_GIMBAL_CTRL_SPEED_REQUEST, (unsigned char *)p_user_data, sizeof(gimbal_custom_speed_t), 0, 0, 1);
   return 0;
 }
 

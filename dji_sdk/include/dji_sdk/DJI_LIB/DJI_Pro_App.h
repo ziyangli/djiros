@@ -632,8 +632,7 @@ int DJI_Pro_Activate_API(activate_data_t *p_user_data,
                          Command_Result_Notify user_notice_entrance);
 int DJI_Pro_Send_To_Mobile_Device(unsigned char *data,unsigned char len,
                                   Command_Result_Notify user_notice_entrance);
-int DJI_Pro_Control_Management(unsigned char cmd,
-                               Command_Result_Notify user_notice_entrance);
+int DJI_Pro_Control_Management(uint8_t cmd, Command_Result_Notify user_notice_entrance);
 int DJI_Pro_Attitude_Control(attitude_data_t *p_user_data);
 int DJI_Pro_Gimbal_Angle_Control(gimbal_custom_control_angle_t *p_user_data);
 int DJI_Pro_Gimbal_Speed_Control(gimbal_custom_speed_t *p_user_data);

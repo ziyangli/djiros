@@ -225,7 +225,7 @@ int Pro_Ack_Interface(ProAckParameter* params) {
 }
 
 int Pro_Send_Interface(ProSendParameter *params) {
-  unsigned short ret = 0;
+  uint16_t ret = 0;
   CMD_Session_Tab* cmd_session = NULL;
   static unsigned short global_seq_num = 0;
 
