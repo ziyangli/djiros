@@ -1,4 +1,5 @@
 #include <functional>
+
 #include "dji_sdk/dji_sdk_node.h"
 
 #define DEG2RAD(DEG) ((DEG)*((C_PI)/(180.0)))
@@ -7,6 +8,16 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/FluidPressure.h>
+
+bool DJISDKNode::API_ON = false;
+DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private) {
+
+  init_publishers(nh_private);
+  init_services(nh);
+
+  // handle activation
+  init_parameters(nh_private);
+}
 
 /* /brief publisher invoke by sdk lik
  *
@@ -324,21 +335,6 @@ int DJISDKNode::init_parameters(ros::NodeHandle& nh_private) {
   return 0;
 }
 
-DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private) {
-
-  init_publishers(nh_private);
-  init_services(nh);
-  // init_actions(nh);
-
-  int groundstation_enable;
-  nh_private.param("groundstation_enable", groundstation_enable, 1);
-  if (groundstation_enable) {
-    DJISDKMission* dji_sdk_mission = new DJISDKMission(nh);
-  }
-
-  // handle activation
-  init_parameters(nh_private);
-}
 
 void DJISDKNode::gps_convert_ned(float &ned_x, float &ned_y, double gps_t_lon, double gps_t_lat, double gps_r_lon, double gps_r_lat) {
   double d_lon = gps_t_lon - gps_r_lon;

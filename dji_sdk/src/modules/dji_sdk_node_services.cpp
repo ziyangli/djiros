@@ -1,7 +1,6 @@
-#include <dji_sdk/dji_sdk_node.h>
+#include "dji_sdk/dji_sdk_node.h"
 
-bool DJISDKNode::attitude_control_callback(dji_sdk::AttitudeControl::Request& request, dji_sdk::AttitudeControl::Response& response)
-{
+bool DJISDKNode::attitude_control_callback(dji_sdk::AttitudeControl::Request& request, dji_sdk::AttitudeControl::Response& response) {
   attitude_data_t user_ctrl_data;
 
   user_ctrl_data.ctrl_flag = request.flag;
@@ -33,38 +32,7 @@ bool DJISDKNode::sdk_permission_control_callback(dji_sdk::SDKPermissionControl::
   return true;
 }
 
-bool DJISDKNode::virtual_rc_enable_control_callback(dji_sdk::VirtualRCEnableControl::Request& request, dji_sdk::VirtualRCEnableControl::Response& response)
-{
-  virtual_rc_manager_t virtual_rc_manager;
-  virtual_rc_manager.enable = request.enable;
-  virtual_rc_manager.if_back_to_real = request.if_back_to_real;
-  DJI_Pro_Virtual_RC_Manage(&virtual_rc_manager);
-
-  response.result = true;
-  return true;
-}
-
-bool DJISDKNode::virtual_rc_data_control_callback(dji_sdk::VirtualRCDataControl::Request& request, dji_sdk::VirtualRCDataControl::Response& response)
-{
-  virtual_rc_data_t virtual_rc_data;
-  std::copy(request.channel_data.begin(), request.channel_data.end(), virtual_rc_data.channel_data);
-  DJI_Pro_Virtual_RC_Send_Value(&virtual_rc_data);
-
-  response.result = true;
-  return true;
-}
-
-bool DJISDKNode::drone_arm_control_callback(dji_sdk::DroneArmControl::Request& request, dji_sdk::DroneArmControl::Response& response)
-{
-  uint8_t arm = request.arm;
-  DJI_Pro_Arm_Control(arm);
-
-  response.result = true;
-  return true;
-}
-
-bool DJISDKNode::sync_flag_control_callback(dji_sdk::SyncFlagControl::Request& request, dji_sdk::SyncFlagControl::Response& response)
-{
+bool DJISDKNode::sync_flag_control_callback(dji_sdk::SyncFlagControl::Request& request, dji_sdk::SyncFlagControl::Response& response) {
   uint32_t frequency = request.frequency;
   DJI_Pro_Send_Sync_Flag(frequency);
 
@@ -72,12 +40,46 @@ bool DJISDKNode::sync_flag_control_callback(dji_sdk::SyncFlagControl::Request& r
   return true;
 }
 
-bool DJISDKNode::message_frequency_control_callback(dji_sdk::MessageFrequencyControl::Request& request, dji_sdk::MessageFrequencyControl::Response& response)
-{
-  sdk_msgs_frequency_data_t message_frequency;
-  std::copy(request.frequency.begin(), request.frequency.end(), message_frequency.std_freq);
-  DJI_Pro_Set_Msgs_Frequency(&message_frequency);
+bool DJISDKNode::api_srv_callback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
+  static ros::Time previous_api_srv_stamp = ros::Time::now() - ros::Duration(1.5);
 
-  response.result = true;
-  return true;
+  if (API_ON) {
+    ROS_INFO("ncore_bridge: ctrl. api already enabled.");
+    return true;
+  }
+
+  ros::Time this_time = ros::Time::now();
+  if (this_time - previous_api_srv_stamp > ros::Duration(1.0)) {
+    ROS_INFO("ncore_bridge: enabling ctrl. api...");
+    uint8_t send_data = 0x01;
+
+    // need ack to toggle boolen
+    DJI_Pro_App_Send_Data(SESSION_ACK_ON, ENC_OFF, MY_CTRL_CMD_SET, API_CTRL_MANAGEMENT, &send_data, sizeof(send_data), api_ack_callback, 500, 1); // api_ack_callback
+
+    previous_api_srv_stamp = this_time;
+
+    return false;
+  }
+  else {
+    /* request too frequently */
+    // ROS_INFO("ncore_bridge: ...");
+    return false;
+  }
+}
+
+/* /brief util function envoked by api_srv_callback
+ *
+ */
+void DJISDKNode::api_ack_callback(ProHeader* header) {
+  uint16_t ack_data = 0xFFFF;
+  memcpy((uint8_t *)&ack_data, (uint8_t *)&header->magic, (header->length - EXC_DATA_SIZE));
+
+  if (ack_data != CTRL_API_OPENED) {
+    API_ON = false;
+    ROS_WARN("ncore_bridge: use offboard swich to enable ctrl api!");
+  }
+  else {
+    API_ON = true;
+    ROS_INFO("ncore_bridge: FCU offboard enabled.");
+  }
 }

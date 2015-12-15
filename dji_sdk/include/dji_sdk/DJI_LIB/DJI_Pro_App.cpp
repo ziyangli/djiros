@@ -22,8 +22,7 @@ static pthread_mutex_t mission_event_lock = PTHREAD_MUTEX_INITIALIZER;
 static cmd_mission_common_data_t mission_state_data;
 static cmd_mission_common_data_t mission_event_data;
 
-
-void DJI_Pro_App_Send_Data(unsigned char session_mode, unsigned char is_enc, unsigned char cmd_set, unsigned char cmd_id, unsigned char *pdata,int len,ACK_Callback_Func ack_callback, int timeout ,int retry_time) {
+void DJI_Pro_App_Send_Data(unsigned char session_mode, unsigned char is_enc, unsigned char cmd_set, unsigned char cmd_id, unsigned char *pdata, int len, ACK_Callback_Func ack_callback, int timeout ,int retry_time) {
   ProSendParameter param;
   unsigned char *ptemp = (unsigned char *)Pro_Encode_Data;
   *ptemp++ = cmd_set;
@@ -66,16 +65,8 @@ static int DJI_Pro_Create_Thread(void *(* func)(void *), void *arg) {
 }
 
 /*
- *  interface: get api version
- */
-static int get_api_ver_lock = -1;
-static Get_API_Version_Notify p_get_api_ver_interface = 0;
-static version_query_data_t to_user_version_data;
-
-/*
  *  interface: activation interface
  */
-
 static int activate_api_lock = -1;
 static Command_Result_Notify p_activate_api_interface = 0;
 static activate_data_t from_user_account_data;
@@ -351,12 +342,9 @@ static void DJI_Pro_Arm_Control_CallBack(ProHeader *header) {
   }
 }
 
-int DJI_Pro_Arm_Control(unsigned char arm_cmd)
-{
-  DJI_Pro_App_Send_Data(2, 1, MY_CTRL_CMD_SET, API_CTRL_ARM,
-                        &arm_cmd, sizeof(arm_cmd), DJI_Pro_Arm_Control_CallBack, 100, 1 );
+int DJI_Pro_Arm_Control(uint8_t arm_cmd) {
+  DJI_Pro_App_Send_Data(2, 1, MY_CTRL_CMD_SET, API_CTRL_ARM, &arm_cmd, sizeof(arm_cmd), DJI_Pro_Arm_Control_CallBack, 100, 1);
   return 0;
-
 }
 
 /*
@@ -375,23 +363,18 @@ int DJI_Pro_Send_Sync_Flag(uint32_t frequency)
  */
 
 static void DJI_Pro_Virtual_RC_Manage_CallBack(ProHeader *header) {
-  unsigned short ack_data = 0xFFFF;
+  uint16_t ack_data = 0xFFFF;
   if (header->length - EXC_DATA_SIZE<= 2) {
     memcpy((unsigned char*)&ack_data, (unsigned char*) &header -> magic, (header -> length -EXC_DATA_SIZE));
     printf("ACK of virtual RC manager: %x\n", ack_data);
   }
-  else
-  {
-    printf("%s,line %d:ERROR,ACK is exception,seesion id %d,sequence %d\n",
-           __func__,__LINE__,header->session_id,header->sequence_number);
+  else {
+    printf("%s, line %d: ERROR, ACK is exception, seesion id %d, sequence %d\n", __func__, __LINE__, header->session_id, header->sequence_number);
   }
 }
 
-int DJI_Pro_Virtual_RC_Manage(virtual_rc_manager_t *p_rc_manager_data)
-{
-  DJI_Pro_App_Send_Data(2,1, MY_VIRTUAL_RC_CMD_SET, API_VIRTUAL_RC_MANAGER,
-                        (unsigned char*)p_rc_manager_data, sizeof(virtual_rc_manager_t),
-                        DJI_Pro_Virtual_RC_Manage_CallBack, 500, 1);
+int DJI_Pro_Virtual_RC_Manage(virtual_rc_manager_t* p_rc_manager_data) {
+  DJI_Pro_App_Send_Data(2,1, MY_VIRTUAL_RC_CMD_SET, API_VIRTUAL_RC_MANAGER, (unsigned char*)p_rc_manager_data, sizeof(virtual_rc_manager_t), DJI_Pro_Virtual_RC_Manage_CallBack, 500, 1);
   return 0;
 }
 
