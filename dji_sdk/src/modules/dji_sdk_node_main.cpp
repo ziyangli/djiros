@@ -336,6 +336,7 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private) {
     DJISDKMission* dji_sdk_mission = new DJISDKMission(nh);
   }
 
+  // handle activation
   init_parameters(nh_private);
 }
 

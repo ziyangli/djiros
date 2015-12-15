@@ -65,7 +65,6 @@ class DJISDKNode {
   ros::ServiceServer activation_service;
   ros::ServiceServer attitude_control_service;
   ros::ServiceServer camera_action_control_service;
-  ros::ServiceServer drone_task_control_service;
   ros::ServiceServer gimbal_angle_control_service;
   ros::ServiceServer gimbal_speed_control_service;
   ros::ServiceServer global_position_control_service;
@@ -98,10 +97,8 @@ class DJISDKNode {
   bool version_check_callback(dji_sdk::VersionCheck::Request& requset, dji_sdk::VersionCheck::Response& response);
 
   void init_services(ros::NodeHandle& nh) {
-    activation_service = nh.advertiseService("dji_sdk/activation", &DJISDKNode::activation_callback, this);
     attitude_control_service = nh.advertiseService("dji_sdk/attitude_control", &DJISDKNode::attitude_control_callback, this);
-    camera_action_control_service = nh.advertiseService("dji_sdk/camera_action_control",&DJISDKNode::camera_action_control_callback, this);
-    drone_task_control_service = nh.advertiseService("dji_sdk/drone_task_control", &DJISDKNode::drone_task_control_callback, this);
+    // camera_action_control_service = nh.advertiseService("dji_sdk/camera_action_control", &DJISDKNode::camera_action_control_callback, this);
     gimbal_angle_control_service = nh.advertiseService("dji_sdk/gimbal_angle_control", &DJISDKNode::gimbal_angle_control_callback, this);
     gimbal_speed_control_service = nh.advertiseService("dji_sdk/gimbal_speed_control", &DJISDKNode::gimbal_speed_control_callback, this);
     global_position_control_service = nh.advertiseService("dji_sdk/global_position_control", &DJISDKNode::global_position_control_callback, this);

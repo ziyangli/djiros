@@ -348,12 +348,10 @@ typedef struct
 /*
  *struct of cmd agency data
  */
-
-typedef struct
-{
-  unsigned char cmd_sequence;
-  unsigned char cmd_data;
-}cmd_agency_data_t;
+typedef struct {
+  uint8_t cmd_sequence;
+  uint8_t cmd_data;
+} cmd_agency_data_t;
 
 //----------------------------------------------------------------------
 // for activation

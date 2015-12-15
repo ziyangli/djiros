@@ -1,12 +1,5 @@
 #include <dji_sdk/dji_sdk_node.h>
 
-bool DJISDKNode::activation_callback(dji_sdk::Activation::Request& request, dji_sdk::Activation::Response& response)
-{
-  DJI_Pro_Activate_API(&user_act_data, NULL);
-  response.result = true;
-  return true;
-}
-
 bool DJISDKNode::attitude_control_callback(dji_sdk::AttitudeControl::Request& request, dji_sdk::AttitudeControl::Response& response)
 {
   attitude_data_t user_ctrl_data;
@@ -23,47 +16,24 @@ bool DJISDKNode::attitude_control_callback(dji_sdk::AttitudeControl::Request& re
   return true;
 }
 
-bool DJISDKNode::camera_action_control_callback(dji_sdk::CameraActionControl::Request& request, dji_sdk::CameraActionControl::Response& response)
-{
-  if (request.camera_action == 0) {
-    DJI_Pro_Camera_Control(API_CAMERA_SHOT);
-    response.result = true;
-  }
-  else if (request.camera_action == 1) {
-    DJI_Pro_Camera_Control(API_CAMERA_VIDEO_START);
-    response.result = true;
-  }
-  else if (request.camera_action == 2) {
-    DJI_Pro_Camera_Control(API_CAMERA_VIDEO_STOP);
-    response.result = true;
-  }
-  else {
-    response.result = false;
-  }
-  return true;
-}
-
-bool DJISDKNode::drone_task_control_callback(dji_sdk::DroneTaskControl::Request& request, dji_sdk::DroneTaskControl::Response& response)
-{
-  if (request.task== 4) {
-    //takeoff
-    DJI_Pro_Status_Ctrl(4, 0);
-    response.result = true;
-  }
-  else if (request.task == 6) {
-    //landing
-    DJI_Pro_Status_Ctrl(6, 0);
-    response.result = true;
-  }
-  else if (request.task == 1) {
-    //gohome
-    DJI_Pro_Status_Ctrl(1, 0);
-    response.result = true;
-  }
-  else
-    response.result = false;
-  return true;
-}
+// bool DJISDKNode::camera_action_control_callback(dji_sdk::CameraActionControl::Request& request, dji_sdk::CameraActionControl::Response& response) {
+//   if (request.camera_action == 0) {
+//     DJI_Pro_Camera_Control(API_CAMERA_SHOT);
+//     response.result = true;
+//   }
+//   else if (request.camera_action == 1) {
+//     DJI_Pro_Camera_Control(API_CAMERA_VIDEO_START);
+//     response.result = true;
+//   }
+//   else if (request.camera_action == 2) {
+//     DJI_Pro_Camera_Control(API_CAMERA_VIDEO_STOP);
+//     response.result = true;
+//   }
+//   else {
+//     response.result = false;
+//   }
+//   return true;
+// }
 
 bool DJISDKNode::gimbal_angle_control_callback(dji_sdk::GimbalAngleControl::Request& request, dji_sdk::GimbalAngleControl::Response& response)
 {
